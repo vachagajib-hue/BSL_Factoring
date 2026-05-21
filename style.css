@@ -1,0 +1,153 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+
+body {
+    font-family: 'Sarabun', 'Inter', sans-serif;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9; 
+}
+ 
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1; 
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8; 
+}
+
+/* PDF Export Adjustments via Browser Print */
+@media print {
+    /* ซ่อนทุกอย่างในหน้าจอ */
+    body * {
+        visibility: hidden;
+    }
+    /* แสดงเฉพาะส่วนที่ต้องการ Export */
+    #table-export-area, #table-export-area * {
+        visibility: visible;
+    }
+    /* ดึงพื้นที่ตารางมาไว้บนสุดของหน้ากระดาษ */
+    #table-export-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0 !important;
+        padding: 15mm !important; /* เพิ่มระยะขอบให้เนื้อหาในหน้านี้แทน margin ของหน้ากระดาษ */
+        border: none !important;
+        box-shadow: none !important;
+    }
+    /* ซ่อนปุ่มและตัวกรอง */
+    button, select, [data-html2canvas-ignore] {
+        display: none !important;
+    }
+    /* ตั้งค่ากระดาษ A4 แนวตั้ง และซ่อนหัว/ท้ายกระดาษ (URL/วันที่) */
+    @page {
+        size: A4 portrait;
+        margin: 0;
+    }
+    /* ป้องกันการตัดหน้ากลางตารางและส่วนท้าย */
+    tr, #report-footer-section, #debtor-summary-container {
+        page-break-inside: avoid !important;
+    }
+    table {
+        page-break-inside: auto;
+    }
+    thead {
+        display: table-header-group;
+    }
+}
+
+/* ====== Daily PDF Report Modal ====== */
+.bsl-pdf-overlay {
+    position: fixed; inset: 0; background: rgba(15,23,42,0.65);
+    display: none; align-items: center; justify-content: center;
+    z-index: 10000; padding: 16px;
+    backdrop-filter: blur(2px);
+}
+.bsl-pdf-overlay.show { display: flex; }
+.bsl-pdf-sheet {
+    background: #fff; border-radius: 16px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.35);
+    max-width: 540px; width: 100%; max-height: 92vh; overflow-y: auto;
+    display: flex; flex-direction: column;
+}
+.bsl-pdf-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid #e2e8f0;
+    position: sticky; top: 0; background: #fff; z-index: 1;
+    border-radius: 16px 16px 0 0;
+}
+.bsl-pdf-title { font-size: 17px; font-weight: 700; color: #0f172a; }
+.bsl-pdf-close {
+    width: 32px; height: 32px; border-radius: 50%; border: none; background: #f1f5f9;
+    cursor: pointer; font-size: 20px; color: #475569;
+    display: flex; align-items: center; justify-content: center; line-height: 1;
+}
+.bsl-pdf-close:hover { background: #e2e8f0; }
+.bsl-pdf-controls { padding: 16px 20px; }
+.bsl-cal-topbar {
+    display: flex; gap: 6px; align-items: center; margin-bottom: 12px; flex-wrap: wrap;
+}
+.bsl-cal-nav {
+    width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff;
+    cursor: pointer; font-size: 18px; font-weight: 700; color: #475569;
+    display: flex; align-items: center; justify-content: center; line-height: 1;
+}
+.bsl-cal-nav:hover { background: #f8fafc; }
+.bsl-cal-sel {
+    border: 1px solid #e2e8f0; background: #fff; padding: 6px 10px; border-radius: 8px;
+    font-size: 13px; font-family: inherit; cursor: pointer; flex: 1; min-width: 90px;
+    color: #334155;
+}
+.bsl-cal-selall, .bsl-cal-clear {
+    border: 1px solid #e2e8f0; background: #fff; padding: 6px 10px; border-radius: 8px;
+    font-size: 12px; font-family: inherit; cursor: pointer; color: #475569; font-weight: 600;
+}
+.bsl-cal-selall:hover { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
+.bsl-cal-clear:hover { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+.bsl-cal-weekdays {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 6px;
+    text-align: center; font-size: 11px; font-weight: 700; color: #64748b;
+}
+.bsl-cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 12px;
+}
+.bsl-cal-day {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer;
+    font-size: 13px; font-weight: 600; color: #334155; background: #fff;
+    position: relative; user-select: none; transition: all 0.15s;
+}
+.bsl-cal-day:hover { background: #f8fafc; transform: scale(1.05); }
+.bsl-cal-day.empty { border: none; background: transparent; cursor: default; }
+.bsl-cal-day.empty:hover { transform: none; }
+.bsl-cal-day.has-data::after {
+    content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+    width: 4px; height: 4px; border-radius: 50%; background: #4f46e5;
+}
+.bsl-cal-day.selected {
+    background: #4f46e5; color: #fff; border-color: #4338ca;
+    box-shadow: 0 2px 6px rgba(79,70,229,0.3);
+}
+.bsl-cal-day.selected.has-data::after { background: #fff; }
+.bsl-cal-selected-bar {
+    background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 8px;
+    font-size: 13px; color: #475569; font-weight: 600; text-align: center; margin-bottom: 12px;
+}
+.bsl-btn-generate-pdf {
+    width: 100%; padding: 12px; border-radius: 10px; border: none;
+    background: linear-gradient(90deg, #4f46e5, #7c3aed); color: #fff;
+    font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
+    transition: opacity 0.15s, transform 0.15s;
+}
+.bsl-btn-generate-pdf:hover { opacity: 0.92; transform: translateY(-1px); }
+.bsl-btn-generate-pdf:active { transform: translateY(0); }
