@@ -483,6 +483,32 @@ function populateFilters(data) {
 
     // วาดหน้าตัวกรองหมายเหตุแบบเช็คบล็อก
     const dropdown = document.getElementById('note-filter-dropdown');
+
+    // ====== Note Dropdown Toggle ======
+    const noteBtn = document.getElementById('note-filter-btn');
+    const noteDrop = document.getElementById('note-filter-dropdown');
+    const noteArrow = document.getElementById('note-filter-arrow');
+    if (noteBtn && noteDrop) {
+        noteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isHidden = noteDrop.classList.contains('hidden');
+            if (isHidden) {
+                noteDrop.classList.remove('hidden');
+                setTimeout(() => {
+                    noteDrop.classList.remove('scale-95', 'opacity-0');
+                    noteDrop.classList.add('scale-100', 'opacity-100');
+                }, 10);
+                if (noteArrow) noteArrow.classList.add('rotate-180');
+            } else {
+                noteDrop.classList.remove('scale-100', 'opacity-100');
+                noteDrop.classList.add('scale-95', 'opacity-0');
+                if (noteArrow) noteArrow.classList.remove('rotate-180');
+                setTimeout(() => noteDrop.classList.add('hidden'), 150);
+            }
+        });
+        noteDrop.addEventListener('click', e => e.stopPropagation());
+    }
+
     if (dropdown) {
         dropdown.innerHTML = '';
         
