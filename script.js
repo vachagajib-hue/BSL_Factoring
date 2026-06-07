@@ -10,6 +10,8 @@ let selectedNotes = new Set();
 let uniqueNotesList = [];
 let selectedMonths = new Set();
 let uniqueMonthsList = [];
+let selectedYears = new Set();
+let uniqueYearsList = [];
 
 const KPI_DATA = [
     { title: "ชื่อบริษัท", amount: "กำลังโหลด...", color: "text-indigo-600", bg: "bg-indigo-50" },
@@ -323,7 +325,90 @@ function populateFilters(data) {
 
     fill('f1-month', m1Set, applyFilter1); fill('f1-year', y1Set, applyFilter1);
     fill('f2-day', d2Set, applyFilter2); fill('f2-month', m2Set, applyFilter2); fill('f2-year', y2Set, applyFilter2);
-    fill('table-filter-year', tySet, applyTableFilter);
+
+    // ====== Year Checkbox Dropdown ======
+    const yearDropdown = document.getElementById('year-filter-dropdown');
+    if (yearDropdown) {
+        yearDropdown.innerHTML = '';
+        const sortedYears = Array.from(tySet).sort();
+        uniqueYearsList = sortedYears;
+        selectedYears = new Set(sortedYears);
+
+        const allYearDiv = document.createElement('div');
+        allYearDiv.className = 'flex items-center gap-2 pb-2 mb-2 border-b border-slate-100 font-bold text-slate-700';
+        allYearDiv.innerHTML = `
+            <input type="checkbox" id="year-all-chk" class="w-3.5 h-3.5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer" checked>
+            <label for="year-all-chk" class="text-xs select-none cursor-pointer">เลือกทั้งหมด</label>
+        `;
+        yearDropdown.appendChild(allYearDiv);
+
+        sortedYears.forEach((y, idx) => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-2 hover:bg-slate-50 p-1 rounded transition-colors';
+            div.innerHTML = `
+                <input type="checkbox" id="year-chk-${idx}" value="${y}" class="year-chk-item w-3.5 h-3.5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer" checked>
+                <label for="year-chk-${idx}" class="text-xs select-none cursor-pointer text-slate-600">${y}</label>
+            `;
+            yearDropdown.appendChild(div);
+        });
+
+        const allYearChk = document.getElementById('year-all-chk');
+        const yearItems = yearDropdown.querySelectorAll('.year-chk-item');
+
+        allYearChk.addEventListener('change', () => {
+            const checked = allYearChk.checked;
+            yearItems.forEach(chk => {
+                chk.checked = checked;
+                checked ? selectedYears.add(chk.value) : selectedYears.delete(chk.value);
+            });
+            updateYearFilterUI();
+            applyTableFilter();
+        });
+
+        yearItems.forEach(chk => {
+            chk.addEventListener('change', () => {
+                chk.checked ? selectedYears.add(chk.value) : selectedYears.delete(chk.value);
+                allYearChk.checked = Array.from(yearItems).every(i => i.checked);
+                updateYearFilterUI();
+                applyTableFilter();
+            });
+        });
+
+        updateYearFilterUI();
+    }
+
+    // ====== Year Dropdown Toggle ======
+    const yearBtn = document.getElementById('year-filter-btn');
+    const yearDrop = document.getElementById('year-filter-dropdown');
+    const yearArrow = document.getElementById('year-filter-arrow');
+    if (yearBtn && yearDrop) {
+        yearBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isHidden = yearDrop.classList.contains('hidden');
+            if (isHidden) {
+                yearDrop.classList.remove('hidden');
+                setTimeout(() => {
+                    yearDrop.classList.remove('scale-95', 'opacity-0');
+                    yearDrop.classList.add('scale-100', 'opacity-100');
+                }, 10);
+                if (yearArrow) yearArrow.classList.add('rotate-180');
+            } else {
+                yearDrop.classList.remove('scale-100', 'opacity-100');
+                yearDrop.classList.add('scale-95', 'opacity-0');
+                if (yearArrow) yearArrow.classList.remove('rotate-180');
+                setTimeout(() => yearDrop.classList.add('hidden'), 150);
+            }
+        });
+        yearDrop.addEventListener('click', e => e.stopPropagation());
+        document.addEventListener('click', () => {
+            if (!yearDrop.classList.contains('hidden')) {
+                yearDrop.classList.remove('scale-100', 'opacity-100');
+                yearDrop.classList.add('scale-95', 'opacity-0');
+                if (yearArrow) yearArrow.classList.remove('rotate-180');
+                setTimeout(() => yearDrop.classList.add('hidden'), 150);
+            }
+        });
+    }
 
     // ====== Month Checkbox Dropdown ======
     const monthDropdown = document.getElementById('month-filter-dropdown');
@@ -522,6 +607,19 @@ function updateMonthFilterUI() {
     }
 }
 
+function updateYearFilterUI() {
+    const label = document.getElementById('year-filter-label');
+    if (!label) return;
+    const total = uniqueYearsList.length;
+    if (selectedYears.size === 0) {
+        label.textContent = 'ปี (ไม่มีการเลือก)';
+    } else if (selectedYears.size === total) {
+        label.textContent = 'ปี (ทั้งหมด)';
+    } else {
+        label.textContent = Array.from(selectedYears).sort().join(', ');
+    }
+}
+
 function applyFilter1() {
     const m = document.getElementById('f1-month').value;
     const y = document.getElementById('f1-year').value;
@@ -587,8 +685,6 @@ function applyFilter2() {
 }
 
 function applyTableFilter() {
-    const y = document.getElementById('table-filter-year').value;
-    
     let filtered = [];
     let totalAmount = 0;
 
@@ -598,8 +694,8 @@ function applyTableFilter() {
         const noteKey = noteVal === "" ? "(ไม่มีหมายเหตุ)" : noteVal;
         
         const matchesMonth = selectedMonths.size === 0 || selectedMonths.has(pTable.m);
-        const matchesYear = !y || pTable.y === y;
-        const matchesNote = selectedNotes.has(noteKey);
+        const matchesYear  = selectedYears.size === 0  || selectedYears.has(pTable.y);
+        const matchesNote  = selectedNotes.has(noteKey);
 
         if (matchesMonth && matchesYear && matchesNote) {
             const pDue = pTable;
@@ -639,14 +735,13 @@ function applyTableFilter() {
         '05': 'พฤษภาคม', '06': 'มิถุนายน', '07': 'กรกฎาคม', '08': 'สิงหาคม',
         '09': 'กันยายน', '10': 'ตุลาคม', '11': 'พฤศจิกายน', '12': 'ธันวาคม'
     };
-    const ySelect = document.getElementById('table-filter-year');
-    const yText = y ? ySelect.options[ySelect.selectedIndex].text : '';
     let subText = '';
-    if (selectedMonths.size > 0 && selectedMonths.size < uniqueMonthsList.length) {
-        const mNames = Array.from(selectedMonths).sort().map(m => THAI_MONTHS_FULL[m] || m).join(', ');
-        subText = `(ประจำเดือน ${mNames} ${yText})`.trim();
-    } else if (y) {
-        subText = `(ปี ${yText})`.trim();
+    const mSelected = selectedMonths.size > 0 && selectedMonths.size < uniqueMonthsList.length;
+    const ySelected = selectedYears.size > 0 && selectedYears.size < uniqueYearsList.length;
+    if (mSelected || ySelected) {
+        const mNames = mSelected ? Array.from(selectedMonths).sort().map(m => THAI_MONTHS_FULL[m] || m).join(', ') : '';
+        const yNames = ySelected ? Array.from(selectedYears).sort().join(', ') : '';
+        subText = `(ประจำเดือน ${mNames} ${yNames})`.replace(/\s+/g, ' ').trim();
     }
     const subEl = document.getElementById('pdf-subtitle');
     if (subEl) subEl.textContent = subText;
