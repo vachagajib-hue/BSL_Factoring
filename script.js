@@ -400,14 +400,6 @@ function populateFilters(data) {
             }
         });
         yearDrop.addEventListener('click', e => e.stopPropagation());
-        document.addEventListener('click', () => {
-            if (!yearDrop.classList.contains('hidden')) {
-                yearDrop.classList.remove('scale-100', 'opacity-100');
-                yearDrop.classList.add('scale-95', 'opacity-0');
-                if (yearArrow) yearArrow.classList.remove('rotate-180');
-                setTimeout(() => yearDrop.classList.add('hidden'), 150);
-            }
-        });
     }
 
     // ====== Month Checkbox Dropdown ======
@@ -487,14 +479,6 @@ function populateFilters(data) {
             }
         });
         monthDrop.addEventListener('click', e => e.stopPropagation());
-        document.addEventListener('click', () => {
-            if (!monthDrop.classList.contains('hidden')) {
-                monthDrop.classList.remove('scale-100', 'opacity-100');
-                monthDrop.classList.add('scale-95', 'opacity-0');
-                if (monthArrow) monthArrow.classList.remove('rotate-180');
-                setTimeout(() => monthDrop.classList.add('hidden'), 150);
-            }
-        });
     }
 
     // วาดหน้าตัวกรองหมายเหตุแบบเช็คบล็อก
@@ -1312,48 +1296,23 @@ function bslGeneratePDFPreview() {
 
 // ผูก event listeners ของ Daily PDF Report
 document.addEventListener('DOMContentLoaded', () => {
-    // ผูก event listener สำหรับตัวกรองหมายเหตุแบบกำหนดเอง (Dropdown Toggle และปิดเมื่อคลิกภายนอก)
-    const noteBtn = document.getElementById('note-filter-btn');
-    const noteDropdown = document.getElementById('note-filter-dropdown');
-    const noteArrow = document.getElementById('note-filter-arrow');
-    
-    if (noteBtn && noteDropdown) {
-        noteBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const isHidden = noteDropdown.classList.contains('hidden');
-            if (isHidden) {
-                noteDropdown.classList.remove('hidden');
-                // เอฟเฟกต์ Fade-in & Scale-up (Micro-animation)
-                setTimeout(() => {
-                    noteDropdown.classList.remove('scale-95', 'opacity-0');
-                    noteDropdown.classList.add('scale-100', 'opacity-100');
-                }, 10);
-                if (noteArrow) noteArrow.classList.add('rotate-180');
-            } else {
-                noteDropdown.classList.remove('scale-100', 'opacity-100');
-                noteDropdown.classList.add('scale-95', 'opacity-0');
-                if (noteArrow) noteArrow.classList.remove('rotate-180');
-                setTimeout(() => {
-                    noteDropdown.classList.add('hidden');
-                }, 150);
+    // ปิด dropdown ทุกตัวเมื่อคลิกภายนอก (รวมเป็นตัวเดียว)
+    document.addEventListener('click', () => {
+        [
+            { drop: 'note-filter-dropdown',  arrow: 'note-filter-arrow'  },
+            { drop: 'month-filter-dropdown', arrow: 'month-filter-arrow' },
+            { drop: 'year-filter-dropdown',  arrow: 'year-filter-arrow'  },
+        ].forEach(({ drop, arrow }) => {
+            const el = document.getElementById(drop);
+            const ar = document.getElementById(arrow);
+            if (el && !el.classList.contains('hidden')) {
+                el.classList.remove('scale-100', 'opacity-100');
+                el.classList.add('scale-95', 'opacity-0');
+                if (ar) ar.classList.remove('rotate-180');
+                setTimeout(() => el.classList.add('hidden'), 150);
             }
         });
-        
-        noteDropdown.addEventListener('click', (e) => {
-            e.stopPropagation(); // กันการปิดตัวกรองเมื่อกดติ๊กใน dropdown
-        });
-        
-        document.addEventListener('click', () => {
-            if (!noteDropdown.classList.contains('hidden')) {
-                noteDropdown.classList.remove('scale-100', 'opacity-100');
-                noteDropdown.classList.add('scale-95', 'opacity-0');
-                if (noteArrow) noteArrow.classList.remove('rotate-180');
-                setTimeout(() => {
-                    noteDropdown.classList.add('hidden');
-                }, 150);
-            }
-        });
-    }
+    });
 
     const btnOpen = document.getElementById('btnDailyPDF');
     if (btnOpen) btnOpen.addEventListener('click', openBslPDFModal);
