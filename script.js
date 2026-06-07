@@ -7,7 +7,9 @@ let RAW_DATA1 = [];
 let SUMMARY_MAP = {}; 
 let INITIAL_CHART_DATA = { chart1: [], chart2: [] }; 
 let selectedNotes = new Set();
-let uniqueNotesList = []; 
+let uniqueNotesList = [];
+let selectedMonths = new Set();
+let uniqueMonthsList = [];
 
 const KPI_DATA = [
     { title: "ชื่อบริษัท", amount: "กำลังโหลด...", color: "text-indigo-600", bg: "bg-indigo-50" },
@@ -321,7 +323,94 @@ function populateFilters(data) {
 
     fill('f1-month', m1Set, applyFilter1); fill('f1-year', y1Set, applyFilter1);
     fill('f2-day', d2Set, applyFilter2); fill('f2-month', m2Set, applyFilter2); fill('f2-year', y2Set, applyFilter2);
-    fill('table-filter-month', tmSet, applyTableFilter); fill('table-filter-year', tySet, applyTableFilter);
+    fill('table-filter-year', tySet, applyTableFilter);
+
+    // ====== Month Checkbox Dropdown ======
+    const monthDropdown = document.getElementById('month-filter-dropdown');
+    if (monthDropdown) {
+        monthDropdown.innerHTML = '';
+
+        const sortedMonths = Array.from(tmSet).sort();
+        uniqueMonthsList = sortedMonths;
+        selectedMonths = new Set(sortedMonths);
+
+        // "เลือกทั้งหมด"
+        const allMonthDiv = document.createElement('div');
+        allMonthDiv.className = 'flex items-center gap-2 pb-2 mb-2 border-b border-slate-100 font-bold text-slate-700';
+        allMonthDiv.innerHTML = `
+            <input type="checkbox" id="month-all-chk" class="w-3.5 h-3.5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer" checked>
+            <label for="month-all-chk" class="text-xs select-none cursor-pointer">เลือกทั้งหมด</label>
+        `;
+        monthDropdown.appendChild(allMonthDiv);
+
+        sortedMonths.forEach((m, idx) => {
+            const mLabel = THAI_MONTHS[m] || m;
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-2 hover:bg-slate-50 p-1 rounded transition-colors';
+            div.innerHTML = `
+                <input type="checkbox" id="month-chk-${idx}" value="${m}" class="month-chk-item w-3.5 h-3.5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer" checked>
+                <label for="month-chk-${idx}" class="text-xs select-none cursor-pointer text-slate-600">${mLabel}</label>
+            `;
+            monthDropdown.appendChild(div);
+        });
+
+        const allMonthChk = document.getElementById('month-all-chk');
+        const monthItems = monthDropdown.querySelectorAll('.month-chk-item');
+
+        allMonthChk.addEventListener('change', () => {
+            const checked = allMonthChk.checked;
+            monthItems.forEach(chk => {
+                chk.checked = checked;
+                checked ? selectedMonths.add(chk.value) : selectedMonths.delete(chk.value);
+            });
+            updateMonthFilterUI();
+            applyTableFilter();
+        });
+
+        monthItems.forEach(chk => {
+            chk.addEventListener('change', () => {
+                chk.checked ? selectedMonths.add(chk.value) : selectedMonths.delete(chk.value);
+                allMonthChk.checked = Array.from(monthItems).every(i => i.checked);
+                updateMonthFilterUI();
+                applyTableFilter();
+            });
+        });
+
+        updateMonthFilterUI();
+    }
+
+    // ====== Month Dropdown Toggle ======
+    const monthBtn = document.getElementById('month-filter-btn');
+    const monthDrop = document.getElementById('month-filter-dropdown');
+    const monthArrow = document.getElementById('month-filter-arrow');
+    if (monthBtn && monthDrop) {
+        monthBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isHidden = monthDrop.classList.contains('hidden');
+            if (isHidden) {
+                monthDrop.classList.remove('hidden');
+                setTimeout(() => {
+                    monthDrop.classList.remove('scale-95', 'opacity-0');
+                    monthDrop.classList.add('scale-100', 'opacity-100');
+                }, 10);
+                if (monthArrow) monthArrow.classList.add('rotate-180');
+            } else {
+                monthDrop.classList.remove('scale-100', 'opacity-100');
+                monthDrop.classList.add('scale-95', 'opacity-0');
+                if (monthArrow) monthArrow.classList.remove('rotate-180');
+                setTimeout(() => monthDrop.classList.add('hidden'), 150);
+            }
+        });
+        monthDrop.addEventListener('click', e => e.stopPropagation());
+        document.addEventListener('click', () => {
+            if (!monthDrop.classList.contains('hidden')) {
+                monthDrop.classList.remove('scale-100', 'opacity-100');
+                monthDrop.classList.add('scale-95', 'opacity-0');
+                if (monthArrow) monthArrow.classList.remove('rotate-180');
+                setTimeout(() => monthDrop.classList.add('hidden'), 150);
+            }
+        });
+    }
 
     // วาดหน้าตัวกรองหมายเหตุแบบเช็คบล็อก
     const dropdown = document.getElementById('note-filter-dropdown');
@@ -414,6 +503,25 @@ function updateNoteFilterUI() {
     }
 }
 
+function updateMonthFilterUI() {
+    const label = document.getElementById('month-filter-label');
+    if (!label) return;
+    const THAI_MONTHS = {
+        '01': 'ม.ค.', '02': 'ก.พ.', '03': 'มี.ค.', '04': 'เม.ย.',
+        '05': 'พ.ค.', '06': 'มิ.ย.', '07': 'ก.ค.', '08': 'ส.ค.',
+        '09': 'ก.ย.', '10': 'ต.ค.', '11': 'พ.ย.', '12': 'ธ.ค.'
+    };
+    const total = uniqueMonthsList.length;
+    if (selectedMonths.size === 0) {
+        label.textContent = 'เดือน (ไม่มีการเลือก)';
+    } else if (selectedMonths.size === total) {
+        label.textContent = 'เดือน (ทั้งหมด)';
+    } else {
+        const names = Array.from(selectedMonths).sort().map(m => THAI_MONTHS[m] || m).join(', ');
+        label.textContent = names;
+    }
+}
+
 function applyFilter1() {
     const m = document.getElementById('f1-month').value;
     const y = document.getElementById('f1-year').value;
@@ -478,9 +586,7 @@ function applyFilter2() {
     updateChart2(chartData);
 }
 
-// ฟังก์ชันใหม่สำหรับตารางรายย่อย
 function applyTableFilter() {
-    const m = document.getElementById('table-filter-month').value;
     const y = document.getElementById('table-filter-year').value;
     
     let filtered = [];
@@ -491,7 +597,7 @@ function applyTableFilter() {
         const noteVal = (row[DATA1_COL.note] || "").toString().trim();
         const noteKey = noteVal === "" ? "(ไม่มีหมายเหตุ)" : noteVal;
         
-        const matchesMonth = !m || pTable.m === m.padStart(2, '0');
+        const matchesMonth = selectedMonths.size === 0 || selectedMonths.has(pTable.m);
         const matchesYear = !y || pTable.y === y;
         const matchesNote = selectedNotes.has(noteKey);
 
@@ -505,14 +611,13 @@ function applyTableFilter() {
                 shortDate = `${pDue.d}/${pDue.m}/${pDue.y}`;
             }
 
-            // ดึงข้อมูล "ประจำเดือน" จากคอลัมน์ H (jobType) ตามคำขอใหม่
             const payMonthDisplay = row[DATA1_COL.jobType] || "";
 
             filtered.push({
                 c: shortDate,
                 f: row[DATA1_COL.invoice],
-                g: row[DATA1_COL.bank],   // รายละเอียด
-                h: payMonthDisplay,       // ประจำเดือน (ดึงจากคอลัมน์ H)
+                g: row[DATA1_COL.bank],
+                h: payMonthDisplay,
                 i: row[DATA1_COL.debtor],
                 s: row[DATA1_COL.status],
                 t: row[DATA1_COL.note],
@@ -522,21 +627,26 @@ function applyTableFilter() {
         }
     });
 
-    // เรียงลำดับจากวันที่ น้อยไปมาก (เก่าสุด -> ล่าสุด)
     filtered.sort((a, b) => a._dateVal - b._dateVal);
-
     renderTable(filtered);
+
     const totalEl = document.getElementById('table-total-amount');
     if (totalEl) totalEl.textContent = formatMoney(totalAmount);
 
-    // อัปเดตข้อความบนหัวกระดาษ (PDF Subtitle) ให้ตรงกับเดือน/ปีที่เลือก
-    const mSelect = document.getElementById('table-filter-month');
+    // อัปเดต PDF subtitle
+    const THAI_MONTHS_FULL = {
+        '01': 'มกราคม', '02': 'กุมภาพันธ์', '03': 'มีนาคม', '04': 'เมษายน',
+        '05': 'พฤษภาคม', '06': 'มิถุนายน', '07': 'กรกฎาคม', '08': 'สิงหาคม',
+        '09': 'กันยายน', '10': 'ตุลาคม', '11': 'พฤศจิกายน', '12': 'ธันวาคม'
+    };
     const ySelect = document.getElementById('table-filter-year');
+    const yText = y ? ySelect.options[ySelect.selectedIndex].text : '';
     let subText = '';
-    if (m || y) {
-        const mText = m ? mSelect.options[mSelect.selectedIndex].text : '';
-        const yText = y ? ySelect.options[ySelect.selectedIndex].text : '';
-        subText = `(ประจำเดือน ${mText} ${yText})`.replace('  ', ' ').trim();
+    if (selectedMonths.size > 0 && selectedMonths.size < uniqueMonthsList.length) {
+        const mNames = Array.from(selectedMonths).sort().map(m => THAI_MONTHS_FULL[m] || m).join(', ');
+        subText = `(ประจำเดือน ${mNames} ${yText})`.trim();
+    } else if (y) {
+        subText = `(ปี ${yText})`.trim();
     }
     const subEl = document.getElementById('pdf-subtitle');
     if (subEl) subEl.textContent = subText;
@@ -634,39 +744,80 @@ function renderTable(data) {
         `;
     }).join('');
 
-    // คำนวณสรุปยอดตามลูกหนี้ (Debtor Summary Table)
+    // คำนวณสรุปยอดแบบ Pivot Table: แถว = ลูกหนี้, คอลัมน์ = วันที่ (เรียงน้อย→มาก)
     if (summaryContainer) {
-        const debtorTotals = {};
+        const dateSet = new Set();
+        const debtorOrder = [];
+        const debtorSet = new Set();
+        const pivot = {};
         let grandTotal = 0;
+
         validData.forEach(r => {
             const name = r.i;
-            debtorTotals[name] = (debtorTotals[name] || 0) + r.n;
-            grandTotal += r.n;
+            const date = r.c;
+            const amt  = r.n;
+            dateSet.add(date);
+            if (!debtorSet.has(name)) { debtorSet.add(name); debtorOrder.push(name); }
+            if (!pivot[name]) pivot[name] = {};
+            pivot[name][date] = (pivot[name][date] || 0) + amt;
+            grandTotal += amt;
         });
 
+        const sortedDates = Array.from(dateSet).sort((a, b) => {
+            const toNum = s => {
+                const p = s.split('/');
+                return parseInt((p[2] || '0') + (p[1] || '00').padStart(2,'0') + (p[0] || '00').padStart(2,'0'), 10);
+            };
+            return toNum(a) - toNum(b);
+        });
+
+        const dateTotals = {};
+        sortedDates.forEach(d => {
+            dateTotals[d] = debtorOrder.reduce((s, name) => s + (pivot[name][d] || 0), 0);
+        });
+
+        const dateThs = sortedDates.map(d =>
+            `<th class="p-2 border border-indigo-500 text-center whitespace-nowrap" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">${d}</th>`
+        ).join('');
+
+        const debtorRows = debtorOrder.map(name => {
+            const rowTotal = sortedDates.reduce((s, d) => s + (pivot[name][d] || 0), 0);
+            const cells = sortedDates.map(d => {
+                const amt = pivot[name][d] || 0;
+                return `<td class="p-2 border border-slate-300 text-right whitespace-nowrap ${amt > 0 ? 'text-slate-700 font-medium' : 'text-slate-300'}">${amt > 0 ? formatMoney(amt) : '-'}</td>`;
+            }).join('');
+            return `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-2 border border-slate-300 text-slate-600 font-medium whitespace-nowrap">${name}</td>
+                    ${cells}
+                    <td class="p-2 border border-slate-300 text-right font-black text-indigo-700 whitespace-nowrap">${formatMoney(rowTotal)}</td>
+                </tr>`;
+        }).join('');
+
+        const footerCells = sortedDates.map(d =>
+            `<td class="p-2 border border-slate-300 text-right font-black text-indigo-700 whitespace-nowrap" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">${formatMoney(dateTotals[d])}</td>`
+        ).join('');
+
         const summaryHtml = `
-            <table class="w-full border-collapse border border-slate-300 text-xs shadow-sm" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+            <div class="overflow-x-auto">
+            <table class="border-collapse border border-slate-300 text-xs shadow-sm" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
                 <thead>
-                    <tr class="bg-slate-100 font-bold text-slate-700">
-                        <th class="p-2 border border-slate-300 text-left">สรุปยอดแต่ละลูกหนี้</th>
-                        <th class="p-2 border border-slate-300 text-right">จำนวนเงิน</th>
+                    <tr class="bg-indigo-600 text-white font-bold" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                        <th class="p-2 border border-indigo-500 text-left whitespace-nowrap">ลูกหนี้</th>
+                        ${dateThs}
+                        <th class="p-2 border border-indigo-500 text-center whitespace-nowrap">รวม</th>
                     </tr>
                 </thead>
-                <tbody>
-                    ${Object.entries(debtorTotals).map(([name, amt]) => `
-                        <tr>
-                            <td class="p-2 border border-slate-300 text-slate-600 font-medium">${name}</td>
-                            <td class="p-2 border border-slate-300 text-right font-bold text-slate-700">${formatMoney(amt)}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
+                <tbody>${debtorRows}</tbody>
                 <tfoot>
-                    <tr class="bg-indigo-50 font-black">
-                        <td class="p-2 border border-slate-300 text-indigo-700 uppercase tracking-wider">รวมรวมทั้งสิ้น</td>
-                        <td class="p-2 border border-slate-300 text-right text-indigo-700">${formatMoney(grandTotal)}</td>
+                    <tr class="bg-indigo-50 font-black" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                        <td class="p-2 border border-slate-300 text-indigo-700 uppercase tracking-wider whitespace-nowrap">รวมทั้งสิ้น</td>
+                        ${footerCells}
+                        <td class="p-2 border border-slate-300 text-right text-indigo-700 whitespace-nowrap">${formatMoney(grandTotal)}</td>
                     </tr>
                 </tfoot>
             </table>
+            </div>
         `;
         summaryContainer.innerHTML = summaryHtml;
     }
