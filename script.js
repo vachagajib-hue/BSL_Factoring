@@ -482,31 +482,28 @@ function populateFilters(data) {
     }
 
     // วาดหน้าตัวกรองหมายเหตุแบบเช็คบล็อก
-    const dropdown = document.getElementById('note-filter-dropdown');
-
     // ====== Note Dropdown Toggle ======
     const noteBtn = document.getElementById('note-filter-btn');
-    const noteDrop = document.getElementById('note-filter-dropdown');
+    const dropdown = document.getElementById('note-filter-dropdown');
     const noteArrow = document.getElementById('note-filter-arrow');
-    if (noteBtn && noteDrop) {
+    if (noteBtn && dropdown) {
         noteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const isHidden = noteDrop.classList.contains('hidden');
+            const isHidden = dropdown.classList.contains('hidden');
             if (isHidden) {
-                noteDrop.classList.remove('hidden');
+                dropdown.classList.remove('hidden');
                 setTimeout(() => {
-                    noteDrop.classList.remove('scale-95', 'opacity-0');
-                    noteDrop.classList.add('scale-100', 'opacity-100');
+                    dropdown.classList.remove('scale-95', 'opacity-0');
+                    dropdown.classList.add('scale-100', 'opacity-100');
                 }, 10);
                 if (noteArrow) noteArrow.classList.add('rotate-180');
             } else {
-                noteDrop.classList.remove('scale-100', 'opacity-100');
-                noteDrop.classList.add('scale-95', 'opacity-0');
+                dropdown.classList.remove('scale-100', 'opacity-100');
+                dropdown.classList.add('scale-95', 'opacity-0');
                 if (noteArrow) noteArrow.classList.remove('rotate-180');
-                setTimeout(() => noteDrop.classList.add('hidden'), 150);
+                setTimeout(() => dropdown.classList.add('hidden'), 150);
             }
         });
-        noteDrop.addEventListener('click', e => e.stopPropagation());
     }
 
     if (dropdown) {
@@ -1323,15 +1320,18 @@ function bslGeneratePDFPreview() {
 // ผูก event listeners ของ Daily PDF Report
 document.addEventListener('DOMContentLoaded', () => {
     // ปิด dropdown ทุกตัวเมื่อคลิกภายนอก (รวมเป็นตัวเดียว)
-    document.addEventListener('click', () => {
+    document.addEventListener('click', (e) => {
         [
-            { drop: 'note-filter-dropdown',  arrow: 'note-filter-arrow'  },
-            { drop: 'month-filter-dropdown', arrow: 'month-filter-arrow' },
-            { drop: 'year-filter-dropdown',  arrow: 'year-filter-arrow'  },
-        ].forEach(({ drop, arrow }) => {
+            { drop: 'note-filter-dropdown',  arrow: 'note-filter-arrow',  btn: 'note-filter-btn'  },
+            { drop: 'month-filter-dropdown', arrow: 'month-filter-arrow', btn: 'month-filter-btn' },
+            { drop: 'year-filter-dropdown',  arrow: 'year-filter-arrow',  btn: 'year-filter-btn'  },
+        ].forEach(({ drop, arrow, btn }) => {
             const el = document.getElementById(drop);
             const ar = document.getElementById(arrow);
-            if (el && !el.classList.contains('hidden')) {
+            const b  = document.getElementById(btn);
+            if (!el || el.classList.contains('hidden')) return;
+            // ปิดเฉพาะเมื่อคลิกอยู่นอก dropdown และนอกปุ่ม
+            if (!el.contains(e.target) && b && !b.contains(e.target)) {
                 el.classList.remove('scale-100', 'opacity-100');
                 el.classList.add('scale-95', 'opacity-0');
                 if (ar) ar.classList.remove('rotate-180');
