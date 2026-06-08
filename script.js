@@ -14,6 +14,12 @@ let selectedYears = new Set();
 let uniqueYearsList = [];
 let selectedStatuses = new Set();
 let uniqueStatusList = [];
+let advSelectedStatuses = new Set();
+let advSelectedMonths = new Set();
+let advSelectedYears = new Set();
+let advUniqueStatusList = [];
+let advUniqueMonthsList = [];
+let advUniqueYearsList = [];
 
 const KPI_DATA = [
     { title: "ชื่อบริษัท", amount: "กำลังโหลด...", color: "text-indigo-600", bg: "bg-indigo-50" },
@@ -262,7 +268,9 @@ function processRealData(summary, details) {
         
         // กรองและแสดงตารางครั้งแรก
         populateFilters(details.data);
-        applyTableFilter(); 
+        applyTableFilter();
+        populateAdvanceFilters(details.data);
+        applyAdvanceFilter();
     }
 }
 
@@ -850,6 +858,186 @@ function applyTableFilter() {
     if (subEl) subEl.textContent = subText;
 }
 
+// =====================================================================
+// ยอด Advance 90% — Filters & Table
+// =====================================================================
+function populateAdvanceFilters(data) {
+    const THAI_MONTHS = {
+        '01': 'มกราคม', '02': 'กุมภาพันธ์', '03': 'มีนาคม', '04': 'เมษายน',
+        '05': 'พฤษภาคม', '06': 'มิถุนายน', '07': 'กรกฎาคม', '08': 'สิงหาคม',
+        '09': 'กันยายน', '10': 'ตุลาคม', '11': 'พฤศจิกายน', '12': 'ธันวาคม'
+    };
+    const THAI_MONTHS_SHORT = {
+        '01': 'ม.ค.', '02': 'ก.พ.', '03': 'มี.ค.', '04': 'เม.ย.',
+        '05': 'พ.ค.', '06': 'มิ.ย.', '07': 'ก.ค.', '08': 'ส.ค.',
+        '09': 'ก.ย.', '10': 'ต.ค.', '11': 'พ.ย.', '12': 'ธ.ค.'
+    };
+
+    const tmSet = new Set(), tySet = new Set(), tsSet = new Set();
+    data.forEach(row => {
+        const p = parseDateParts(row[DATA1_COL.dueDate]);
+        if (p.m && p.y) { tmSet.add(p.m); tySet.add(p.y); }
+        const debtorName = (row[DATA1_COL.debtor] || "").toString().trim();
+        if (debtorName && debtorName !== "ลูกหนี้" && debtorName !== "ชื่อลูกหนี้" && debtorName !== "Debtor") {
+            const sv = (row[DATA1_COL.status] || "").toString().trim();
+            tsSet.add(sv === "" ? "(ไม่มีสถานะ)" : sv);
+        }
+    });
+
+    const buildCheckboxDropdown = (dropId, allChkId, itemClass, sortedValues, selectedSet, uniqueList, labelFn, updateUI) => {
+        const dropdown = document.getElementById(dropId);
+        if (!dropdown) return;
+        dropdown.innerHTML = '';
+        uniqueList.length = 0;
+        sortedValues.forEach(v => uniqueList.push(v));
+        sortedValues.forEach(v => selectedSet.add(v));
+
+        const allDiv = document.createElement('div');
+        allDiv.className = 'flex items-center gap-2 pb-2 mb-2 border-b border-slate-100 font-bold text-slate-700';
+        allDiv.innerHTML = `<input type="checkbox" id="${allChkId}" class="w-3.5 h-3.5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer" checked>
+            <label for="${allChkId}" class="text-xs select-none cursor-pointer">เลือกทั้งหมด</label>`;
+        dropdown.appendChild(allDiv);
+
+        sortedValues.forEach((v, idx) => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-2 hover:bg-slate-50 p-1 rounded transition-colors';
+            div.innerHTML = `<input type="checkbox" id="${itemClass}-${idx}" value="${v}" class="${itemClass} w-3.5 h-3.5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer" checked>
+                <label for="${itemClass}-${idx}" class="text-xs select-none cursor-pointer text-slate-600">${labelFn(v)}</label>`;
+            dropdown.appendChild(div);
+        });
+
+        const allChk = document.getElementById(allChkId);
+        const items = dropdown.querySelectorAll('.' + itemClass);
+        allChk.addEventListener('change', () => {
+            items.forEach(chk => { chk.checked = allChk.checked; allChk.checked ? selectedSet.add(chk.value) : selectedSet.delete(chk.value); });
+            updateUI(); applyAdvanceFilter();
+        });
+        items.forEach(chk => {
+            chk.addEventListener('change', () => {
+                chk.checked ? selectedSet.add(chk.value) : selectedSet.delete(chk.value);
+                allChk.checked = Array.from(items).every(i => i.checked);
+                updateUI(); applyAdvanceFilter();
+            });
+        });
+        updateUI();
+    };
+
+    buildCheckboxDropdown('adv-status-filter-dropdown', 'adv-status-all-chk', 'adv-status-chk-item',
+        Array.from(tsSet).sort(), advSelectedStatuses, advUniqueStatusList, v => v, updateAdvStatusUI);
+    buildCheckboxDropdown('adv-month-filter-dropdown', 'adv-month-all-chk', 'adv-month-chk-item',
+        Array.from(tmSet).sort(), advSelectedMonths, advUniqueMonthsList, v => THAI_MONTHS[v] || v, updateAdvMonthUI);
+    buildCheckboxDropdown('adv-year-filter-dropdown', 'adv-year-all-chk', 'adv-year-chk-item',
+        Array.from(tySet).sort(), advSelectedYears, advUniqueYearsList, v => v, updateAdvYearUI);
+
+    // Toggle สำหรับ dropdown ทั้ง 3 ตัว
+    [
+        { btn: 'adv-status-filter-btn', drop: 'adv-status-filter-dropdown', arrow: 'adv-status-filter-arrow' },
+        { btn: 'adv-month-filter-btn',  drop: 'adv-month-filter-dropdown',  arrow: 'adv-month-filter-arrow'  },
+        { btn: 'adv-year-filter-btn',   drop: 'adv-year-filter-dropdown',   arrow: 'adv-year-filter-arrow'   },
+    ].forEach(({ btn, drop, arrow }) => {
+        const b = document.getElementById(btn);
+        const d = document.getElementById(drop);
+        const a = document.getElementById(arrow);
+        if (!b || !d) return;
+        b.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isHidden = d.classList.contains('hidden');
+            if (isHidden) {
+                d.classList.remove('hidden');
+                setTimeout(() => { d.classList.remove('scale-95', 'opacity-0'); d.classList.add('scale-100', 'opacity-100'); }, 10);
+                if (a) a.classList.add('rotate-180');
+            } else {
+                d.classList.remove('scale-100', 'opacity-100'); d.classList.add('scale-95', 'opacity-0');
+                if (a) a.classList.remove('rotate-180');
+                setTimeout(() => d.classList.add('hidden'), 150);
+            }
+        });
+    });
+}
+
+function updateAdvStatusUI() {
+    const label = document.getElementById('adv-status-filter-label'); if (!label) return;
+    if (advSelectedStatuses.size === 0) label.textContent = 'สถานะ (ไม่มีการเลือก)';
+    else if (advSelectedStatuses.size === advUniqueStatusList.length) label.textContent = 'สถานะ (ทั้งหมด)';
+    else label.textContent = Array.from(advSelectedStatuses).join(', ');
+}
+function updateAdvMonthUI() {
+    const THAI_MONTHS_SHORT = { '01':'ม.ค.','02':'ก.พ.','03':'มี.ค.','04':'เม.ย.','05':'พ.ค.','06':'มิ.ย.','07':'ก.ค.','08':'ส.ค.','09':'ก.ย.','10':'ต.ค.','11':'พ.ย.','12':'ธ.ค.' };
+    const label = document.getElementById('adv-month-filter-label'); if (!label) return;
+    if (advSelectedMonths.size === 0) label.textContent = 'เดือน (ไม่มีการเลือก)';
+    else if (advSelectedMonths.size === advUniqueMonthsList.length) label.textContent = 'เดือน (ทั้งหมด)';
+    else label.textContent = Array.from(advSelectedMonths).sort().map(m => THAI_MONTHS_SHORT[m] || m).join(', ');
+}
+function updateAdvYearUI() {
+    const label = document.getElementById('adv-year-filter-label'); if (!label) return;
+    if (advSelectedYears.size === 0) label.textContent = 'ปี (ไม่มีการเลือก)';
+    else if (advSelectedYears.size === advUniqueYearsList.length) label.textContent = 'ปี (ทั้งหมด)';
+    else label.textContent = Array.from(advSelectedYears).sort().join(', ');
+}
+
+function applyAdvanceFilter() {
+    let filtered = [];
+    let totalAmount = 0;
+
+    RAW_DATA1.forEach(row => {
+        const p = parseDateParts(row[DATA1_COL.dueDate]);
+        const statusVal = (row[DATA1_COL.status] || "").toString().trim();
+        const statusKey = statusVal === "" ? "(ไม่มีสถานะ)" : statusVal;
+
+        const matchesMonth  = advSelectedMonths.size === 0  || advSelectedMonths.has(p.m);
+        const matchesYear   = advSelectedYears.size === 0   || advSelectedYears.has(p.y);
+        const matchesStatus = advSelectedStatuses.size === 0 || advSelectedStatuses.has(statusKey);
+
+        if (matchesMonth && matchesYear && matchesStatus) {
+            const amt = parseNumber(row[DATA1_COL.used]); // คอลัมน์ P
+            totalAmount += amt;
+            let shortDate = row[DATA1_COL.dueDate];
+            if (p.d && p.m && p.y) shortDate = `${p.d}/${p.m}/${p.y}`;
+            filtered.push({
+                c: shortDate,
+                f: row[DATA1_COL.invoice],
+                g: row[DATA1_COL.bank],
+                h: row[DATA1_COL.jobType] || "",
+                i: row[DATA1_COL.debtor],
+                s: row[DATA1_COL.status],
+                n: amt,
+                _dateVal: (p.y && p.m && p.d) ? parseInt(p.y + p.m + p.d, 10) : 0
+            });
+        }
+    });
+
+    filtered.sort((a, b) => a._dateVal - b._dateVal);
+    renderAdvanceTable(filtered);
+    const totalEl = document.getElementById('advance-total-amount');
+    if (totalEl) totalEl.textContent = formatMoney(totalAmount);
+}
+
+function renderAdvanceTable(data) {
+    const body = document.getElementById('advance-table-body'); if (!body) return;
+
+    const validData = data.filter(r => {
+        const name = (r.i || "").trim();
+        return name && name !== "ลูกหนี้" && name !== "ชื่อลูกหนี้" && name !== "Debtor";
+    });
+
+    if (validData.length === 0) {
+        body.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 italic">ไม่พบข้อมูลในช่วงเวลาที่เลือก</td></tr>`;
+        return;
+    }
+
+    body.innerHTML = validData.map(r => `
+        <tr class="border-b border-slate-300 hover:bg-slate-50 transition-colors text-center">
+            <td class="p-4 text-slate-500 font-medium border-r border-slate-300 whitespace-nowrap">${r.c}</td>
+            <td class="p-4 font-bold text-slate-700 border-r border-slate-300 whitespace-nowrap">${r.f}</td>
+            <td class="p-4 text-slate-600 border-r border-slate-300 whitespace-normal text-left">${r.g}</td>
+            <td class="p-4 text-slate-500 border-r border-slate-300 whitespace-normal">${r.h}</td>
+            <td class="p-4 font-bold text-indigo-600 border-r border-slate-300 whitespace-normal text-left">${r.i}</td>
+            <td class="p-4 text-slate-500 border-r border-slate-300 whitespace-nowrap">${r.s || ''}</td>
+            <td class="p-4 text-right font-black text-emerald-700 whitespace-nowrap">${formatMoney(r.n)}</td>
+        </tr>
+    `).join('');
+}
+
 let c1Inst = null, c2Inst = null;
 const commonOptions = {
     responsive: true, maintainAspectRatio: false,
@@ -1418,10 +1606,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // ปิด dropdown ทุกตัวเมื่อคลิกภายนอก (รวมเป็นตัวเดียว)
     document.addEventListener('click', (e) => {
         [
-            { drop: 'note-filter-dropdown',   arrow: 'note-filter-arrow',   btn: 'note-filter-btn'   },
-            { drop: 'month-filter-dropdown',  arrow: 'month-filter-arrow',  btn: 'month-filter-btn'  },
-            { drop: 'year-filter-dropdown',   arrow: 'year-filter-arrow',   btn: 'year-filter-btn'   },
-            { drop: 'status-filter-dropdown', arrow: 'status-filter-arrow', btn: 'status-filter-btn' },
+            { drop: 'note-filter-dropdown',        arrow: 'note-filter-arrow',        btn: 'note-filter-btn'        },
+            { drop: 'month-filter-dropdown',       arrow: 'month-filter-arrow',       btn: 'month-filter-btn'       },
+            { drop: 'year-filter-dropdown',        arrow: 'year-filter-arrow',        btn: 'year-filter-btn'        },
+            { drop: 'status-filter-dropdown',      arrow: 'status-filter-arrow',      btn: 'status-filter-btn'      },
+            { drop: 'adv-status-filter-dropdown',  arrow: 'adv-status-filter-arrow',  btn: 'adv-status-filter-btn'  },
+            { drop: 'adv-month-filter-dropdown',   arrow: 'adv-month-filter-arrow',   btn: 'adv-month-filter-btn'   },
+            { drop: 'adv-year-filter-dropdown',    arrow: 'adv-year-filter-arrow',    btn: 'adv-year-filter-btn'    },
         ].forEach(({ drop, arrow, btn }) => {
             const el = document.getElementById(drop);
             const ar = document.getElementById(arrow);
