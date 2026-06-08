@@ -1022,6 +1022,8 @@ function renderAdvanceTable(data) {
 
     if (validData.length === 0) {
         body.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 italic">ไม่พบข้อมูลในช่วงเวลาที่เลือก</td></tr>`;
+        const sc = document.getElementById('advance-summary-container');
+        if (sc) sc.innerHTML = '';
         return;
     }
 
@@ -1036,6 +1038,75 @@ function renderAdvanceTable(data) {
             <td class="p-4 text-right font-black text-emerald-700 whitespace-nowrap">${formatMoney(r.n)}</td>
         </tr>
     `).join('');
+
+    // Pivot Table สรุปท้ายตาราง
+    const summaryContainer = document.getElementById('advance-summary-container');
+    if (summaryContainer) {
+        const dateSet = new Set();
+        const debtorOrder = [];
+        const debtorSet = new Set();
+        const pivot = {};
+        let grandTotal = 0;
+
+        validData.forEach(r => {
+            const name = r.i, date = r.c, amt = r.n;
+            dateSet.add(date);
+            if (!debtorSet.has(name)) { debtorSet.add(name); debtorOrder.push(name); }
+            if (!pivot[name]) pivot[name] = {};
+            pivot[name][date] = (pivot[name][date] || 0) + amt;
+            grandTotal += amt;
+        });
+
+        const sortedDates = Array.from(dateSet).sort((a, b) => {
+            const toNum = s => { const p = s.split('/'); return parseInt((p[2]||'0')+(p[1]||'00').padStart(2,'0')+(p[0]||'00').padStart(2,'0'),10); };
+            return toNum(a) - toNum(b);
+        });
+
+        const dateTotals = {};
+        sortedDates.forEach(d => { dateTotals[d] = debtorOrder.reduce((s, n) => s + (pivot[n][d] || 0), 0); });
+
+        const dateThs = sortedDates.map(d =>
+            `<th class="p-2 border border-indigo-500 text-center whitespace-nowrap" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">${d}</th>`
+        ).join('');
+
+        const debtorRows = debtorOrder.map(name => {
+            const rowTotal = sortedDates.reduce((s, d) => s + (pivot[name][d] || 0), 0);
+            const cells = sortedDates.map(d => {
+                const amt = pivot[name][d] || 0;
+                return `<td class="p-2 border border-slate-300 text-right whitespace-nowrap ${amt > 0 ? 'text-slate-700 font-medium' : 'text-slate-300'}">${amt > 0 ? formatMoney(amt) : '-'}</td>`;
+            }).join('');
+            return `<tr class="hover:bg-slate-50">
+                <td class="p-2 border border-slate-300 text-slate-600 font-medium whitespace-nowrap">${name}</td>
+                ${cells}
+                <td class="p-2 border border-slate-300 text-right font-black text-indigo-700 whitespace-nowrap">${formatMoney(rowTotal)}</td>
+            </tr>`;
+        }).join('');
+
+        const footerCells = sortedDates.map(d =>
+            `<td class="p-2 border border-slate-300 text-right font-black text-indigo-700 whitespace-nowrap" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">${formatMoney(dateTotals[d])}</td>`
+        ).join('');
+
+        summaryContainer.innerHTML = `
+            <div class="overflow-x-auto">
+            <table class="border-collapse border border-slate-300 text-xs shadow-sm" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                <thead>
+                    <tr class="bg-indigo-600 text-white font-bold" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                        <th class="p-2 border border-indigo-500 text-left whitespace-nowrap">ลูกหนี้</th>
+                        ${dateThs}
+                        <th class="p-2 border border-indigo-500 text-center whitespace-nowrap">รวม</th>
+                    </tr>
+                </thead>
+                <tbody>${debtorRows}</tbody>
+                <tfoot>
+                    <tr class="bg-indigo-50 font-black" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                        <td class="p-2 border border-slate-300 text-indigo-700 uppercase tracking-wider whitespace-nowrap">รวมทั้งสิ้น</td>
+                        ${footerCells}
+                        <td class="p-2 border border-slate-300 text-right text-indigo-700 whitespace-nowrap">${formatMoney(grandTotal)}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            </div>`;
+    }
 }
 
 let c1Inst = null, c2Inst = null;
