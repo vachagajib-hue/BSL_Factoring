@@ -12,6 +12,8 @@ let selectedMonths = new Set();
 let uniqueMonthsList = [];
 let selectedYears = new Set();
 let uniqueYearsList = [];
+let selectedStatuses = new Set();
+let uniqueStatusList = [];
 
 const KPI_DATA = [
     { title: "ชื่อบริษัท", amount: "กำลังโหลด...", color: "text-indigo-600", bg: "bg-indigo-50" },
@@ -285,6 +287,7 @@ function populateFilters(data) {
     const d2Set = new Set(), m2Set = new Set(), y2Set = new Set();
     const tmSet = new Set(), tySet = new Set(); // สำหรับตาราง
     const noteSet = new Set();
+    const statusSet = new Set();
     
     data.forEach((row) => {
         const p1 = parseDateParts(row[DATA1_COL.date]); if (p1.m && p1.y) { m1Set.add(p1.m); y1Set.add(p1.y); }
@@ -302,6 +305,8 @@ function populateFilters(data) {
         if (debtorName && debtorName !== "ลูกหนี้" && debtorName !== "ชื่อลูกหนี้" && debtorName !== "Debtor") {
             const noteVal = (row[DATA1_COL.note] || "").toString().trim();
             noteSet.add(noteVal === "" ? "(ไม่มีหมายเหตุ)" : noteVal);
+            const statusVal = (row[DATA1_COL.status] || "").toString().trim();
+            statusSet.add(statusVal === "" ? "(ไม่มีสถานะ)" : statusVal);
         }
     });
 
@@ -325,6 +330,81 @@ function populateFilters(data) {
 
     fill('f1-month', m1Set, applyFilter1); fill('f1-year', y1Set, applyFilter1);
     fill('f2-day', d2Set, applyFilter2); fill('f2-month', m2Set, applyFilter2); fill('f2-year', y2Set, applyFilter2);
+
+    // ====== Status Checkbox Dropdown ======
+    const statusDropdown = document.getElementById('status-filter-dropdown');
+    if (statusDropdown) {
+        statusDropdown.innerHTML = '';
+        const sortedStatuses = Array.from(statusSet).sort();
+        uniqueStatusList = sortedStatuses;
+        selectedStatuses = new Set(sortedStatuses);
+
+        const allStatusDiv = document.createElement('div');
+        allStatusDiv.className = 'flex items-center gap-2 pb-2 mb-2 border-b border-slate-100 font-bold text-slate-700';
+        allStatusDiv.innerHTML = `
+            <input type="checkbox" id="status-all-chk" class="w-3.5 h-3.5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer" checked>
+            <label for="status-all-chk" class="text-xs select-none cursor-pointer">เลือกทั้งหมด</label>
+        `;
+        statusDropdown.appendChild(allStatusDiv);
+
+        sortedStatuses.forEach((s, idx) => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-2 hover:bg-slate-50 p-1 rounded transition-colors';
+            div.innerHTML = `
+                <input type="checkbox" id="status-chk-${idx}" value="${s}" class="status-chk-item w-3.5 h-3.5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer" checked>
+                <label for="status-chk-${idx}" class="text-xs select-none cursor-pointer text-slate-600">${s}</label>
+            `;
+            statusDropdown.appendChild(div);
+        });
+
+        const allStatusChk = document.getElementById('status-all-chk');
+        const statusItems = statusDropdown.querySelectorAll('.status-chk-item');
+
+        allStatusChk.addEventListener('change', () => {
+            const checked = allStatusChk.checked;
+            statusItems.forEach(chk => {
+                chk.checked = checked;
+                checked ? selectedStatuses.add(chk.value) : selectedStatuses.delete(chk.value);
+            });
+            updateStatusFilterUI();
+            applyTableFilter();
+        });
+
+        statusItems.forEach(chk => {
+            chk.addEventListener('change', () => {
+                chk.checked ? selectedStatuses.add(chk.value) : selectedStatuses.delete(chk.value);
+                allStatusChk.checked = Array.from(statusItems).every(i => i.checked);
+                updateStatusFilterUI();
+                applyTableFilter();
+            });
+        });
+
+        updateStatusFilterUI();
+    }
+
+    // ====== Status Dropdown Toggle ======
+    const statusBtn = document.getElementById('status-filter-btn');
+    const statusDrop = document.getElementById('status-filter-dropdown');
+    const statusArrow = document.getElementById('status-filter-arrow');
+    if (statusBtn && statusDrop) {
+        statusBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isHidden = statusDrop.classList.contains('hidden');
+            if (isHidden) {
+                statusDrop.classList.remove('hidden');
+                setTimeout(() => {
+                    statusDrop.classList.remove('scale-95', 'opacity-0');
+                    statusDrop.classList.add('scale-100', 'opacity-100');
+                }, 10);
+                if (statusArrow) statusArrow.classList.add('rotate-180');
+            } else {
+                statusDrop.classList.remove('scale-100', 'opacity-100');
+                statusDrop.classList.add('scale-95', 'opacity-0');
+                if (statusArrow) statusArrow.classList.remove('rotate-180');
+                setTimeout(() => statusDrop.classList.add('hidden'), 150);
+            }
+        });
+    }
 
     // ====== Year Checkbox Dropdown ======
     const yearDropdown = document.getElementById('year-filter-dropdown');
@@ -627,6 +707,19 @@ function updateYearFilterUI() {
     }
 }
 
+function updateStatusFilterUI() {
+    const label = document.getElementById('status-filter-label');
+    if (!label) return;
+    const total = uniqueStatusList.length;
+    if (selectedStatuses.size === 0) {
+        label.textContent = 'สถานะ (ไม่มีการเลือก)';
+    } else if (selectedStatuses.size === total) {
+        label.textContent = 'สถานะ (ทั้งหมด)';
+    } else {
+        label.textContent = Array.from(selectedStatuses).join(', ');
+    }
+}
+
 function applyFilter1() {
     const m = document.getElementById('f1-month').value;
     const y = document.getElementById('f1-year').value;
@@ -703,8 +796,11 @@ function applyTableFilter() {
         const matchesMonth = selectedMonths.size === 0 || selectedMonths.has(pTable.m);
         const matchesYear  = selectedYears.size === 0  || selectedYears.has(pTable.y);
         const matchesNote  = selectedNotes.has(noteKey);
+        const statusVal2   = (row[DATA1_COL.status] || "").toString().trim();
+        const statusKey    = statusVal2 === "" ? "(ไม่มีสถานะ)" : statusVal2;
+        const matchesStatus = selectedStatuses.size === 0 || selectedStatuses.has(statusKey);
 
-        if (matchesMonth && matchesYear && matchesNote) {
+        if (matchesMonth && matchesYear && matchesNote && matchesStatus) {
             const pDue = pTable;
             const amt = parseNumber(row[DATA1_COL.bill]);
             totalAmount += amt;
@@ -1322,9 +1418,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // ปิด dropdown ทุกตัวเมื่อคลิกภายนอก (รวมเป็นตัวเดียว)
     document.addEventListener('click', (e) => {
         [
-            { drop: 'note-filter-dropdown',  arrow: 'note-filter-arrow',  btn: 'note-filter-btn'  },
-            { drop: 'month-filter-dropdown', arrow: 'month-filter-arrow', btn: 'month-filter-btn' },
-            { drop: 'year-filter-dropdown',  arrow: 'year-filter-arrow',  btn: 'year-filter-btn'  },
+            { drop: 'note-filter-dropdown',   arrow: 'note-filter-arrow',   btn: 'note-filter-btn'   },
+            { drop: 'month-filter-dropdown',  arrow: 'month-filter-arrow',  btn: 'month-filter-btn'  },
+            { drop: 'year-filter-dropdown',   arrow: 'year-filter-arrow',   btn: 'year-filter-btn'   },
+            { drop: 'status-filter-dropdown', arrow: 'status-filter-arrow', btn: 'status-filter-btn' },
         ].forEach(({ drop, arrow, btn }) => {
             const el = document.getElementById(drop);
             const ar = document.getElementById(arrow);
