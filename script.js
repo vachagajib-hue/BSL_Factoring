@@ -36,6 +36,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycby2-H9fuh0eGdD0OurjJeqG
 let DATA1_COL = {
     date: 1,      // B - วันที่เบิกเงิน
     dueDate: 2,   // C - วันครบกำหนด
+    tdCode: 4,    // E - เลข TD
     invoice: 5,   // F - เลขที่ IV
     bank: 6,      // G - ธนาคาร
     jobType: 7,   // H - ประเภทงาน
@@ -822,6 +823,7 @@ function applyTableFilter() {
 
             filtered.push({
                 c: shortDate,
+                td: (row[DATA1_COL.tdCode] || "").toString().trim(),
                 f: row[DATA1_COL.invoice],
                 g: row[DATA1_COL.bank],
                 h: payMonthDisplay,
@@ -995,6 +997,7 @@ function applyAdvanceFilter() {
             if (p.d && p.m && p.y) shortDate = `${p.d}/${p.m}/${p.y}`;
             filtered.push({
                 c: shortDate,
+                td: (row[DATA1_COL.tdCode] || "").toString().trim(),
                 f: row[DATA1_COL.invoice],
                 g: row[DATA1_COL.bank],
                 h: row[DATA1_COL.jobType] || "",
@@ -1020,16 +1023,33 @@ function renderAdvanceTable(data) {
         return name && name !== "ลูกหนี้" && name !== "ชื่อลูกหนี้" && name !== "Debtor";
     });
 
+    // --- ปุ่มซ่อน/แสดง tbody ---
+    const toggleBtn = document.getElementById('adv-table-toggle-btn');
+    const toggleLbl = document.getElementById('adv-table-toggle-lbl');
+    const toggleIcon = document.getElementById('adv-table-toggle-icon');
+    if (toggleBtn && !toggleBtn._bslBound) {
+        toggleBtn._bslBound = true;
+        toggleBtn.addEventListener('click', () => {
+            const isHidden = body.style.display === 'none';
+            body.style.display = isHidden ? '' : 'none';
+            if (toggleLbl) toggleLbl.textContent = isHidden ? 'ซ่อนรายละเอียด' : 'แสดงรายละเอียด';
+            if (toggleIcon) toggleIcon.style.transform = isHidden ? '' : 'rotate(-90deg)';
+        });
+    }
+
     if (validData.length === 0) {
-        body.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 italic">ไม่พบข้อมูลในช่วงเวลาที่เลือก</td></tr>`;
+        body.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-400 italic">ไม่พบข้อมูลในช่วงเวลาที่เลือก</td></tr>`;
         const sc = document.getElementById('advance-summary-container');
         if (sc) sc.innerHTML = '';
         return;
     }
 
-    body.innerHTML = validData.map(r => `
+    body.innerHTML = validData.map(r => {
+        const tdDisplay = r.td || '-';
+        return `
         <tr class="border-b border-slate-300 hover:bg-slate-50 transition-colors text-center">
             <td class="p-4 text-slate-500 font-medium border-r border-slate-300 whitespace-nowrap">${r.c}</td>
+            <td class="p-4 font-bold text-violet-700 border-r border-slate-300 whitespace-nowrap">${tdDisplay}</td>
             <td class="p-4 font-bold text-slate-700 border-r border-slate-300 whitespace-nowrap">${r.f}</td>
             <td class="p-4 text-slate-600 border-r border-slate-300 whitespace-normal text-left">${r.g}</td>
             <td class="p-4 text-slate-500 border-r border-slate-300 whitespace-normal">${r.h}</td>
@@ -1037,23 +1057,27 @@ function renderAdvanceTable(data) {
             <td class="p-4 text-slate-500 border-r border-slate-300 whitespace-nowrap">${r.s || ''}</td>
             <td class="p-4 text-right font-black text-emerald-700 whitespace-nowrap">${formatMoney(r.n)}</td>
         </tr>
-    `).join('');
+    `}).join('');
 
-    // Pivot Table สรุปท้ายตาราง
+    // --- Pivot: แยกแถวตาม TD ---
     const summaryContainer = document.getElementById('advance-summary-container');
     if (summaryContainer) {
         const dateSet = new Set();
         const debtorOrder = [];
         const debtorSet = new Set();
-        const pivot = {};
+        const pivotByDebtor = {};
         let grandTotal = 0;
 
         validData.forEach(r => {
             const name = r.i, date = r.c, amt = r.n;
+            const tdKey = r.td || '-';
+            const desc  = r.g || '';
             dateSet.add(date);
             if (!debtorSet.has(name)) { debtorSet.add(name); debtorOrder.push(name); }
-            if (!pivot[name]) pivot[name] = {};
-            pivot[name][date] = (pivot[name][date] || 0) + amt;
+            if (!pivotByDebtor[name]) pivotByDebtor[name] = [];
+            let entry = pivotByDebtor[name].find(e => e.td === tdKey);
+            if (!entry) { entry = { td: tdKey, desc, dateAmts: {} }; pivotByDebtor[name].push(entry); }
+            entry.dateAmts[date] = (entry.dateAmts[date] || 0) + amt;
             grandTotal += amt;
         });
 
@@ -1063,24 +1087,58 @@ function renderAdvanceTable(data) {
         });
 
         const dateTotals = {};
-        sortedDates.forEach(d => { dateTotals[d] = debtorOrder.reduce((s, n) => s + (pivot[n][d] || 0), 0); });
+        sortedDates.forEach(d => {
+            dateTotals[d] = debtorOrder.reduce((sum, name) => {
+                return sum + (pivotByDebtor[name] || []).reduce((s, e) => s + (e.dateAmts[d] || 0), 0);
+            }, 0);
+        });
 
         const dateThs = sortedDates.map(d =>
             `<th class="p-2 border border-indigo-500 text-center whitespace-nowrap" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">${d}</th>`
         ).join('');
 
-        const debtorRows = debtorOrder.map(name => {
-            const rowTotal = sortedDates.reduce((s, d) => s + (pivot[name][d] || 0), 0);
-            const cells = sortedDates.map(d => {
-                const amt = pivot[name][d] || 0;
-                return `<td class="p-2 border border-slate-300 text-right whitespace-nowrap ${amt > 0 ? 'text-slate-700 font-medium' : 'text-slate-300'}">${amt > 0 ? formatMoney(amt) : '-'}</td>`;
+        let debtorRows = '';
+        debtorOrder.forEach(name => {
+            const entries = pivotByDebtor[name] || [];
+            const debtorTotal = sortedDates.reduce((s, d) => s + entries.reduce((ss, e) => ss + (e.dateAmts[d] || 0), 0), 0);
+
+            entries.forEach((entry, idx) => {
+                const rowTotal = sortedDates.reduce((s, d) => s + (entry.dateAmts[d] || 0), 0);
+                const cells = sortedDates.map(d => {
+                    const amt = entry.dateAmts[d] || 0;
+                    return `<td class="p-2 border border-slate-300 text-right whitespace-nowrap ${amt > 0 ? 'text-slate-700 font-medium' : 'text-slate-300'}">${amt > 0 ? formatMoney(amt) : '-'}</td>`;
+                }).join('');
+
+                const nameCell = idx === 0
+                    ? `<span class="block font-bold text-indigo-700 text-xs">${name}</span>`
+                    : `<span class="block text-slate-300 text-xs pl-3" style="border-left:2px solid #6ee7b7;">↳</span>`;
+
+                debtorRows += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-200">
+                        <td class="p-2 border border-slate-300 whitespace-nowrap" style="min-width:180px;">
+                            ${nameCell}
+                            <div class="flex items-baseline gap-1 ${idx > 0 ? 'pl-3' : ''}" style="${idx > 0 ? 'border-left:2px solid #6ee7b7;' : ''}">
+                                <span class="text-xs font-bold text-violet-700 whitespace-nowrap">${entry.td}</span>
+                                <span class="text-xs text-slate-400 truncate" style="max-width:160px;" title="${entry.desc}">${entry.desc}</span>
+                            </div>
+                        </td>
+                        ${cells}
+                        <td class="p-2 border border-slate-300 text-right font-bold text-emerald-700 whitespace-nowrap text-xs">${formatMoney(rowTotal)}</td>
+                    </tr>`;
+            });
+
+            // Sub-total row
+            const subCells = sortedDates.map(d => {
+                const amt = entries.reduce((s, e) => s + (e.dateAmts[d] || 0), 0);
+                return `<td class="p-2 border border-slate-300 text-right whitespace-nowrap font-bold text-emerald-700 text-xs" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#d1fae5;">${amt > 0 ? formatMoney(amt) : '-'}</td>`;
             }).join('');
-            return `<tr class="hover:bg-slate-50">
-                <td class="p-2 border border-slate-300 text-slate-600 font-medium whitespace-nowrap">${name}</td>
-                ${cells}
-                <td class="p-2 border border-slate-300 text-right font-black text-indigo-700 whitespace-nowrap">${formatMoney(rowTotal)}</td>
-            </tr>`;
-        }).join('');
+            debtorRows += `
+                <tr style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#d1fae5;">
+                    <td class="p-2 border border-slate-300 text-emerald-700 font-bold text-xs whitespace-nowrap" style="background:#d1fae5;">รวม ${name}</td>
+                    ${subCells}
+                    <td class="p-2 border border-slate-300 text-right font-black text-emerald-700 whitespace-nowrap text-xs" style="background:#d1fae5;">${formatMoney(debtorTotal)}</td>
+                </tr>`;
+        });
 
         const footerCells = sortedDates.map(d =>
             `<td class="p-2 border border-slate-300 text-right font-black text-indigo-700 whitespace-nowrap" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">${formatMoney(dateTotals[d])}</td>`
@@ -1091,7 +1149,7 @@ function renderAdvanceTable(data) {
             <table class="border-collapse border border-slate-300 text-xs shadow-sm" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
                 <thead>
                     <tr class="bg-indigo-600 text-white font-bold" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-                        <th class="p-2 border border-indigo-500 text-left whitespace-nowrap">ลูกหนี้</th>
+                        <th class="p-2 border border-indigo-500 text-left whitespace-nowrap" style="min-width:180px;">ลูกหนี้ / เลข TD</th>
                         ${dateThs}
                         <th class="p-2 border border-indigo-500 text-center whitespace-nowrap">รวม</th>
                     </tr>
@@ -1169,27 +1227,40 @@ function updateChart2(data) {
 function renderTable(data) {
     const body = document.getElementById('table-body'); if (!body) return;
     const summaryContainer = document.getElementById('debtor-summary-container');
-    
-    // กรองเอาแถวที่เป็นหัวข้อ (ลูกหนี้) หรือแถวว่างออกก่อนประมวลผล
+
     const validData = data.filter(r => {
         const name = (r.i || "").trim();
         return name && name !== "ลูกหนี้" && name !== "ชื่อลูกหนี้" && name !== "Debtor";
     });
 
+    // --- ปุ่มซ่อน/แสดง tbody ---
+    const toggleBtn = document.getElementById('main-table-toggle-btn');
+    const toggleLbl = document.getElementById('main-table-toggle-lbl');
+    const toggleIcon = document.getElementById('main-table-toggle-icon');
+    if (toggleBtn && !toggleBtn._bslBound) {
+        toggleBtn._bslBound = true;
+        toggleBtn.addEventListener('click', () => {
+            const isHidden = body.style.display === 'none';
+            body.style.display = isHidden ? '' : 'none';
+            if (toggleLbl) toggleLbl.textContent = isHidden ? 'ซ่อนรายละเอียด' : 'แสดงรายละเอียด';
+            if (toggleIcon) toggleIcon.style.transform = isHidden ? '' : 'rotate(-90deg)';
+        });
+    }
+
     if (validData.length === 0) {
-        body.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-400 italic">ไม่พบข้อมูลในช่วงเวลาที่เลือก</td></tr>`;
+        body.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-slate-400 italic">ไม่พบข้อมูลในช่วงเวลาที่เลือก</td></tr>`;
         if (summaryContainer) summaryContainer.innerHTML = '';
         return;
     }
-    
-    // แสดงข้อมูลในตารางหลัก
+
     body.innerHTML = validData.map(r => {
         const note = r.t || '';
         const noteClass = note.includes('ตัดจาก Fac ใหม่') ? 'text-rose-600 font-bold' : 'text-slate-500';
-        
+        const tdDisplay = r.td || '-';
         return `
             <tr class="border-b border-slate-300 hover:bg-slate-50 transition-colors group text-center">
                 <td class="p-4 text-slate-500 font-medium border-r border-slate-300 break-words whitespace-nowrap">${r.c}</td>
+                <td class="p-4 font-bold text-violet-700 border-r border-slate-300 break-words whitespace-nowrap">${tdDisplay}</td>
                 <td class="p-4 font-bold text-slate-700 border-r border-slate-300 break-words whitespace-nowrap">${r.f}</td>
                 <td class="p-4 text-slate-600 border-r border-slate-300 break-words whitespace-normal text-left">${r.g}</td>
                 <td class="p-4 text-slate-500 border-r border-slate-300 break-words whitespace-normal">${r.h}</td>
@@ -1201,66 +1272,97 @@ function renderTable(data) {
         `;
     }).join('');
 
-    // คำนวณสรุปยอดแบบ Pivot Table: แถว = ลูกหนี้, คอลัมน์ = วันที่ (เรียงน้อย→มาก)
+    // --- Pivot: แยกแถวตาม TD แต่ละงาน ---
     if (summaryContainer) {
         const dateSet = new Set();
         const debtorOrder = [];
         const debtorSet = new Set();
-        const pivot = {};
+        // pivot[debtor] = [ { td, desc, dateAmts:{date:amt}, rowTotal } ]
+        const pivotByDebtor = {};
         let grandTotal = 0;
 
         validData.forEach(r => {
-            const name = r.i;
-            const date = r.c;
-            const amt  = r.n;
+            const name = r.i, date = r.c, amt = r.n;
+            const tdKey = r.td || '-';
+            const desc  = r.g || '';
             dateSet.add(date);
             if (!debtorSet.has(name)) { debtorSet.add(name); debtorOrder.push(name); }
-            if (!pivot[name]) pivot[name] = {};
-            pivot[name][date] = (pivot[name][date] || 0) + amt;
+            if (!pivotByDebtor[name]) pivotByDebtor[name] = [];
+            let entry = pivotByDebtor[name].find(e => e.td === tdKey);
+            if (!entry) { entry = { td: tdKey, desc, dateAmts: {} }; pivotByDebtor[name].push(entry); }
+            entry.dateAmts[date] = (entry.dateAmts[date] || 0) + amt;
             grandTotal += amt;
         });
 
         const sortedDates = Array.from(dateSet).sort((a, b) => {
-            const toNum = s => {
-                const p = s.split('/');
-                return parseInt((p[2] || '0') + (p[1] || '00').padStart(2,'0') + (p[0] || '00').padStart(2,'0'), 10);
-            };
+            const toNum = s => { const p = s.split('/'); return parseInt((p[2]||'0')+(p[1]||'00').padStart(2,'0')+(p[0]||'00').padStart(2,'0'),10); };
             return toNum(a) - toNum(b);
         });
 
         const dateTotals = {};
         sortedDates.forEach(d => {
-            dateTotals[d] = debtorOrder.reduce((s, name) => s + (pivot[name][d] || 0), 0);
+            dateTotals[d] = debtorOrder.reduce((sum, name) => {
+                return sum + (pivotByDebtor[name] || []).reduce((s, e) => s + (e.dateAmts[d] || 0), 0);
+            }, 0);
         });
 
         const dateThs = sortedDates.map(d =>
             `<th class="p-2 border border-indigo-500 text-center whitespace-nowrap" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">${d}</th>`
         ).join('');
 
-        const debtorRows = debtorOrder.map(name => {
-            const rowTotal = sortedDates.reduce((s, d) => s + (pivot[name][d] || 0), 0);
-            const cells = sortedDates.map(d => {
-                const amt = pivot[name][d] || 0;
-                return `<td class="p-2 border border-slate-300 text-right whitespace-nowrap ${amt > 0 ? 'text-slate-700 font-medium' : 'text-slate-300'}">${amt > 0 ? formatMoney(amt) : '-'}</td>`;
+        let debtorRows = '';
+        debtorOrder.forEach(name => {
+            const entries = pivotByDebtor[name] || [];
+            const debtorTotal = sortedDates.reduce((s, d) => s + entries.reduce((ss, e) => ss + (e.dateAmts[d] || 0), 0), 0);
+
+            entries.forEach((entry, idx) => {
+                const rowTotal = sortedDates.reduce((s, d) => s + (entry.dateAmts[d] || 0), 0);
+                const cells = sortedDates.map(d => {
+                    const amt = entry.dateAmts[d] || 0;
+                    return `<td class="p-2 border border-slate-300 text-right whitespace-nowrap ${amt > 0 ? 'text-slate-700 font-medium' : 'text-slate-300'}">${amt > 0 ? formatMoney(amt) : '-'}</td>`;
+                }).join('');
+
+                const nameCell = idx === 0
+                    ? `<span class="block font-bold text-indigo-700 text-xs">${name}</span>`
+                    : `<span class="block text-slate-300 text-xs pl-3" style="border-left:2px solid #c4b5fd;">↳</span>`;
+
+                debtorRows += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-200">
+                        <td class="p-2 border border-slate-300 whitespace-nowrap" style="min-width:180px;">
+                            ${nameCell}
+                            <div class="flex items-baseline gap-1 ${idx > 0 ? 'pl-3' : ''}" style="${idx > 0 ? 'border-left:2px solid #c4b5fd;' : ''}">
+                                <span class="text-xs font-bold text-violet-700 whitespace-nowrap">${entry.td}</span>
+                                <span class="text-xs text-slate-400 truncate" style="max-width:160px;" title="${entry.desc}">${entry.desc}</span>
+                            </div>
+                        </td>
+                        ${cells}
+                        <td class="p-2 border border-slate-300 text-right font-bold text-indigo-700 whitespace-nowrap text-xs">${formatMoney(rowTotal)}</td>
+                    </tr>`;
+            });
+
+            // Sub-total row ต่อลูกหนี้
+            const subCells = sortedDates.map(d => {
+                const amt = entries.reduce((s, e) => s + (e.dateAmts[d] || 0), 0);
+                return `<td class="p-2 border border-slate-300 text-right whitespace-nowrap font-bold text-indigo-600 text-xs" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#eef2ff;">${amt > 0 ? formatMoney(amt) : '-'}</td>`;
             }).join('');
-            return `
-                <tr class="hover:bg-slate-50">
-                    <td class="p-2 border border-slate-300 text-slate-600 font-medium whitespace-nowrap">${name}</td>
-                    ${cells}
-                    <td class="p-2 border border-slate-300 text-right font-black text-indigo-700 whitespace-nowrap">${formatMoney(rowTotal)}</td>
+            debtorRows += `
+                <tr style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#eef2ff;">
+                    <td class="p-2 border border-slate-300 text-indigo-600 font-bold text-xs whitespace-nowrap" style="background:#eef2ff;">รวม ${name}</td>
+                    ${subCells}
+                    <td class="p-2 border border-slate-300 text-right font-black text-indigo-700 whitespace-nowrap text-xs" style="background:#eef2ff;">${formatMoney(debtorTotal)}</td>
                 </tr>`;
-        }).join('');
+        });
 
         const footerCells = sortedDates.map(d =>
             `<td class="p-2 border border-slate-300 text-right font-black text-indigo-700 whitespace-nowrap" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">${formatMoney(dateTotals[d])}</td>`
         ).join('');
 
-        const summaryHtml = `
+        summaryContainer.innerHTML = `
             <div class="overflow-x-auto">
             <table class="border-collapse border border-slate-300 text-xs shadow-sm" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
                 <thead>
                     <tr class="bg-indigo-600 text-white font-bold" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-                        <th class="p-2 border border-indigo-500 text-left whitespace-nowrap">ลูกหนี้</th>
+                        <th class="p-2 border border-indigo-500 text-left whitespace-nowrap" style="min-width:180px;">ลูกหนี้ / เลข TD</th>
                         ${dateThs}
                         <th class="p-2 border border-indigo-500 text-center whitespace-nowrap">รวม</th>
                     </tr>
@@ -1276,7 +1378,6 @@ function renderTable(data) {
             </table>
             </div>
         `;
-        summaryContainer.innerHTML = summaryHtml;
     }
 }
 
