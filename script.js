@@ -1109,39 +1109,49 @@ function renderAdvanceTable(data) {
                     return `<td class="p-2 border border-slate-300 text-right whitespace-nowrap ${amt > 0 ? 'text-slate-700 font-medium' : 'text-slate-300'}">${amt > 0 ? formatMoney(amt) : '-'}</td>`;
                 }).join('');
 
-                const nameCell = idx === 0
-                    ? `<span class="block font-bold text-indigo-700 text-xs">${name}</span>`
-                    : `<span class="block text-slate-300 text-xs pl-3" style="border-left:2px solid #6ee7b7;">↳</span>`;
-
-                debtorRows += `
+                if (idx === 0) {
+                    debtorRows += `
                     <tr class="hover:bg-slate-50 border-b border-slate-200">
-                        <td class="p-2 border border-slate-300 whitespace-nowrap" style="min-width:180px;">
-                            ${nameCell}
-                            <div class="flex items-baseline gap-1 ${idx > 0 ? 'pl-3' : ''}" style="${idx > 0 ? 'border-left:2px solid #6ee7b7;' : ''}">
-                                <span class="text-xs font-bold text-violet-700 whitespace-nowrap">${entry.td}</span>
-                                <span class="text-xs text-slate-400 truncate" style="max-width:160px;" title="${entry.desc}">${entry.desc}</span>
+                        <td class="p-2 border border-slate-300" style="min-width:280px;">
+                            <span class="block font-bold text-indigo-700 text-xs mb-1">${name}</span>
+                            <div style="display:table;width:100%;table-layout:fixed;">
+                                <span style="display:table-cell;width:120px;font-size:11px;font-weight:700;color:#7c3aed;white-space:nowrap;vertical-align:top;padding-right:6px;">${entry.td}</span>
+                                <span style="display:table-cell;font-size:11px;color:#94a3b8;vertical-align:top;word-break:break-word;">${entry.desc}</span>
                             </div>
                         </td>
                         ${cells}
-                        <td class="p-2 border border-slate-300 text-right font-bold text-emerald-700 whitespace-nowrap text-xs">${formatMoney(rowTotal)}</td>
+                        <td class="p-2 border border-slate-300 text-right font-bold text-indigo-700 whitespace-nowrap text-xs">${formatMoney(rowTotal)}</td>
                     </tr>`;
+                } else {
+                    debtorRows += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-200">
+                        <td class="p-2 border border-slate-300" style="min-width:280px;">
+                            <div style="display:table;width:100%;table-layout:fixed;border-left:2px solid #c4b5fd;padding-left:6px;">
+                                <span style="display:table-cell;width:120px;font-size:11px;font-weight:700;color:#7c3aed;white-space:nowrap;vertical-align:top;padding-right:6px;">${entry.td}</span>
+                                <span style="display:table-cell;font-size:11px;color:#94a3b8;vertical-align:top;word-break:break-word;">${entry.desc}</span>
+                            </div>
+                        </td>
+                        ${cells}
+                        <td class="p-2 border border-slate-300 text-right font-bold text-indigo-700 whitespace-nowrap text-xs">${formatMoney(rowTotal)}</td>
+                    </tr>`;
+                }
             });
 
             // Sub-total row
             const subCells = sortedDates.map(d => {
                 const amt = entries.reduce((s, e) => s + (e.dateAmts[d] || 0), 0);
-                return `<td class="p-2 border border-slate-300 text-right whitespace-nowrap font-bold text-emerald-700 text-xs" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#d1fae5;">${amt > 0 ? formatMoney(amt) : '-'}</td>`;
+                return `<td class="p-2 border border-slate-300 text-right whitespace-nowrap font-bold text-indigo-700 text-xs" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#e0e7ff;">${amt > 0 ? formatMoney(amt) : '-'}</td>`;
             }).join('');
             debtorRows += `
-                <tr style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#d1fae5;">
-                    <td class="p-2 border border-slate-300 text-emerald-700 font-bold text-xs whitespace-nowrap" style="background:#d1fae5;">รวม ${name}</td>
+                <tr style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#e0e7ff;">
+                    <td class="p-2 border border-slate-300 text-indigo-700 font-bold text-xs whitespace-nowrap" style="background:#e0e7ff;">รวม ${name}</td>
                     ${subCells}
-                    <td class="p-2 border border-slate-300 text-right font-black text-emerald-700 whitespace-nowrap text-xs" style="background:#d1fae5;">${formatMoney(debtorTotal)}</td>
+                    <td class="p-2 border border-slate-300 text-right font-black text-indigo-700 whitespace-nowrap text-xs" style="background:#e0e7ff;">${formatMoney(debtorTotal)}</td>
                 </tr>`;
         });
 
         const footerCells = sortedDates.map(d =>
-            `<td class="p-2 border border-slate-300 text-right font-black text-indigo-700 whitespace-nowrap" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">${formatMoney(dateTotals[d])}</td>`
+            `<td class="p-2 border border-indigo-400 text-right font-black whitespace-nowrap" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#3730a3;color:#fff;">${formatMoney(dateTotals[d])}</td>`
         ).join('');
 
         summaryContainer.innerHTML = `
@@ -1149,17 +1159,17 @@ function renderAdvanceTable(data) {
             <table class="border-collapse border border-slate-300 text-xs shadow-sm" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
                 <thead>
                     <tr class="bg-indigo-600 text-white font-bold" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-                        <th class="p-2 border border-indigo-500 text-left whitespace-nowrap" style="min-width:180px;">ลูกหนี้ / เลข TD</th>
+                        <th class="p-2 border border-indigo-500 text-left whitespace-nowrap" style="min-width:260px;">ลูกหนี้ / เลข TD</th>
                         ${dateThs}
                         <th class="p-2 border border-indigo-500 text-center whitespace-nowrap">รวม</th>
                     </tr>
                 </thead>
                 <tbody>${debtorRows}</tbody>
                 <tfoot>
-                    <tr class="bg-indigo-50 font-black" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-                        <td class="p-2 border border-slate-300 text-indigo-700 uppercase tracking-wider whitespace-nowrap">รวมทั้งสิ้น</td>
+                    <tr style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#3730a3;">
+                        <td class="p-2 border border-indigo-400 font-black whitespace-nowrap" style="background:#3730a3;color:#fff;letter-spacing:0.05em;">รวมทั้งสิ้น</td>
                         ${footerCells}
-                        <td class="p-2 border border-slate-300 text-right text-indigo-700 whitespace-nowrap">${formatMoney(grandTotal)}</td>
+                        <td class="p-2 border border-indigo-400 text-right font-black whitespace-nowrap" style="background:#3730a3;color:#fff;">${formatMoney(grandTotal)}</td>
                     </tr>
                 </tfoot>
             </table>
@@ -1322,39 +1332,49 @@ function renderTable(data) {
                     return `<td class="p-2 border border-slate-300 text-right whitespace-nowrap ${amt > 0 ? 'text-slate-700 font-medium' : 'text-slate-300'}">${amt > 0 ? formatMoney(amt) : '-'}</td>`;
                 }).join('');
 
-                const nameCell = idx === 0
-                    ? `<span class="block font-bold text-indigo-700 text-xs">${name}</span>`
-                    : `<span class="block text-slate-300 text-xs pl-3" style="border-left:2px solid #c4b5fd;">↳</span>`;
-
-                debtorRows += `
+                if (idx === 0) {
+                    debtorRows += `
                     <tr class="hover:bg-slate-50 border-b border-slate-200">
-                        <td class="p-2 border border-slate-300 whitespace-nowrap" style="min-width:180px;">
-                            ${nameCell}
-                            <div class="flex items-baseline gap-1 ${idx > 0 ? 'pl-3' : ''}" style="${idx > 0 ? 'border-left:2px solid #c4b5fd;' : ''}">
-                                <span class="text-xs font-bold text-violet-700 whitespace-nowrap">${entry.td}</span>
-                                <span class="text-xs text-slate-400 truncate" style="max-width:160px;" title="${entry.desc}">${entry.desc}</span>
+                        <td class="p-2 border border-slate-300" style="min-width:280px;">
+                            <span class="block font-bold text-indigo-700 text-xs mb-1">${name}</span>
+                            <div style="display:table;width:100%;table-layout:fixed;">
+                                <span style="display:table-cell;width:120px;font-size:11px;font-weight:700;color:#7c3aed;white-space:nowrap;vertical-align:top;padding-right:6px;">${entry.td}</span>
+                                <span style="display:table-cell;font-size:11px;color:#94a3b8;vertical-align:top;word-break:break-word;">${entry.desc}</span>
                             </div>
                         </td>
                         ${cells}
-                        <td class="p-2 border border-slate-300 text-right font-bold text-indigo-700 whitespace-nowrap text-xs">${formatMoney(rowTotal)}</td>
+                        <td class="p-2 border border-slate-300 text-right font-bold text-emerald-700 whitespace-nowrap text-xs">${formatMoney(rowTotal)}</td>
                     </tr>`;
+                } else {
+                    debtorRows += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-200">
+                        <td class="p-2 border border-slate-300" style="min-width:280px;">
+                            <div style="display:table;width:100%;table-layout:fixed;border-left:2px solid #6ee7b7;padding-left:6px;">
+                                <span style="display:table-cell;width:120px;font-size:11px;font-weight:700;color:#7c3aed;white-space:nowrap;vertical-align:top;padding-right:6px;">${entry.td}</span>
+                                <span style="display:table-cell;font-size:11px;color:#94a3b8;vertical-align:top;word-break:break-word;">${entry.desc}</span>
+                            </div>
+                        </td>
+                        ${cells}
+                        <td class="p-2 border border-slate-300 text-right font-bold text-emerald-700 whitespace-nowrap text-xs">${formatMoney(rowTotal)}</td>
+                    </tr>`;
+                }
             });
 
             // Sub-total row ต่อลูกหนี้
             const subCells = sortedDates.map(d => {
                 const amt = entries.reduce((s, e) => s + (e.dateAmts[d] || 0), 0);
-                return `<td class="p-2 border border-slate-300 text-right whitespace-nowrap font-bold text-indigo-600 text-xs" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#eef2ff;">${amt > 0 ? formatMoney(amt) : '-'}</td>`;
+                return `<td class="p-2 border border-slate-300 text-right whitespace-nowrap font-bold text-emerald-700 text-xs" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#d1fae5;">${amt > 0 ? formatMoney(amt) : '-'}</td>`;
             }).join('');
             debtorRows += `
-                <tr style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#eef2ff;">
-                    <td class="p-2 border border-slate-300 text-indigo-600 font-bold text-xs whitespace-nowrap" style="background:#eef2ff;">รวม ${name}</td>
+                <tr style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#d1fae5;">
+                    <td class="p-2 border border-slate-300 text-emerald-700 font-bold text-xs whitespace-nowrap" style="background:#d1fae5;">รวม ${name}</td>
                     ${subCells}
-                    <td class="p-2 border border-slate-300 text-right font-black text-indigo-700 whitespace-nowrap text-xs" style="background:#eef2ff;">${formatMoney(debtorTotal)}</td>
+                    <td class="p-2 border border-slate-300 text-right font-black text-emerald-700 whitespace-nowrap text-xs" style="background:#d1fae5;">${formatMoney(debtorTotal)}</td>
                 </tr>`;
         });
 
         const footerCells = sortedDates.map(d =>
-            `<td class="p-2 border border-slate-300 text-right font-black text-indigo-700 whitespace-nowrap" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">${formatMoney(dateTotals[d])}</td>`
+            `<td class="p-2 border border-emerald-400 text-right font-black whitespace-nowrap" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#065f46;color:#fff;">${formatMoney(dateTotals[d])}</td>`
         ).join('');
 
         summaryContainer.innerHTML = `
@@ -1362,17 +1382,17 @@ function renderTable(data) {
             <table class="border-collapse border border-slate-300 text-xs shadow-sm" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
                 <thead>
                     <tr class="bg-indigo-600 text-white font-bold" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-                        <th class="p-2 border border-indigo-500 text-left whitespace-nowrap" style="min-width:180px;">ลูกหนี้ / เลข TD</th>
+                        <th class="p-2 border border-indigo-500 text-left whitespace-nowrap" style="min-width:260px;">ลูกหนี้ / เลข TD</th>
                         ${dateThs}
                         <th class="p-2 border border-indigo-500 text-center whitespace-nowrap">รวม</th>
                     </tr>
                 </thead>
                 <tbody>${debtorRows}</tbody>
                 <tfoot>
-                    <tr class="bg-indigo-50 font-black" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-                        <td class="p-2 border border-slate-300 text-indigo-700 uppercase tracking-wider whitespace-nowrap">รวมทั้งสิ้น</td>
+                    <tr style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#065f46;">
+                        <td class="p-2 border border-emerald-400 font-black whitespace-nowrap" style="background:#065f46;color:#fff;letter-spacing:0.05em;">รวมทั้งสิ้น</td>
                         ${footerCells}
-                        <td class="p-2 border border-slate-300 text-right text-indigo-700 whitespace-nowrap">${formatMoney(grandTotal)}</td>
+                        <td class="p-2 border border-emerald-400 text-right font-black whitespace-nowrap" style="background:#065f46;color:#fff;">${formatMoney(grandTotal)}</td>
                     </tr>
                 </tfoot>
             </table>
