@@ -139,6 +139,14 @@
                 <div class="flex items-center gap-3">
                     <h3 class="text-lg font-bold text-slate-800 uppercase tracking-wide">รายงานครบกำหนดชำระ <span
                             id="pdf-subtitle" class="text-sm font-medium text-slate-500 ml-2"></span></h3>
+                    <!-- ปุ่มซ่อน/แสดงรายละเอียด -->
+                    <button id="main-table-toggle-btn" data-html2canvas-ignore="true"
+                        class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-1 rounded-md flex items-center gap-1.5 transition-all font-bold text-[10px] uppercase tracking-wider border border-indigo-100">
+                        <svg id="main-table-toggle-icon" class="w-3.5 h-3.5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                        <span id="main-table-toggle-lbl">ซ่อนรายละเอียด</span>
+                    </button>
                     <!-- ปุ่ม Export PDF เฉพาะตาราง -->
                     <button data-html2canvas-ignore="true" onclick="exportToPDF()"
                         class="bg-rose-50 text-rose-600 hover:bg-rose-100 px-3 py-1 rounded-md flex items-center gap-1.5 transition-all font-bold text-[10px] uppercase tracking-wider border border-rose-100">
@@ -226,23 +234,25 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse border border-slate-300 table-fixed">
                     <colgroup>
-                        <col style="width: 13%;"> <!-- วันที่ครบกำหนด -->
-                        <col style="width: 13%;"> <!-- เลขที่ IV -->
-                        <col style="width: 13%;"> <!-- รายละเอียด -->
-                        <col style="width: 8%;">  <!-- ประจำเดือน -->
-                        <col style="width: 14%;"> <!-- ลูกหนี้ -->
-                        <col style="width: 10%;"> <!-- สถานะ -->
-                        <col style="width: 14%;"> <!-- หมายเหตุ -->
+                        <col style="width: 11%;"> <!-- วันที่ครบกำหนด -->
+                        <col style="width: 9%;">  <!-- เลข TD -->
+                        <col style="width: 11%;"> <!-- เลขที่ IV -->
+                        <col style="width: 12%;"> <!-- รายละเอียด -->
+                        <col style="width: 7%;">  <!-- ประจำเดือน -->
+                        <col style="width: 13%;"> <!-- ลูกหนี้ -->
+                        <col style="width: 9%;">  <!-- สถานะ -->
+                        <col style="width: 13%;"> <!-- หมายเหตุ -->
                         <col style="width: 15%;"> <!-- จำนวนเงิน -->
                     </colgroup>
                     <thead>
                         <!-- แถวสำหรับเว้นระยะขอบบนในหน้า 2 เป็นต้นไป (Visible only in Print) -->
                         <tr class="hidden print:table-row h-[15mm]">
-                            <th colspan="8" class="p-0 border-none bg-white"></th>
+                            <th colspan="9" class="p-0 border-none bg-white"></th>
                         </tr>
                         <tr class="bg-indigo-600 border-b border-indigo-700 text-white font-bold text-base tracking-wide text-center"
                             style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
                             <th class="p-4 border-r border-indigo-500 whitespace-nowrap">วันที่ครบกำหนด</th>
+                            <th class="p-4 border-r border-indigo-500 whitespace-nowrap" style="background:#4338ca;-webkit-print-color-adjust:exact;print-color-adjust:exact;">เลข TD</th>
                             <th class="p-4 border-r border-indigo-500 whitespace-nowrap">เลขที่ IV</th>
                             <th class="p-4 border-r border-indigo-500 whitespace-nowrap">รายละเอียด</th>
                             <th class="p-3 border-r border-indigo-500 whitespace-nowrap">ประจำเดือน</th>
@@ -302,6 +312,14 @@
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div class="flex items-center gap-3">
                     <h3 class="text-lg font-bold text-slate-800 uppercase tracking-wide">ยอด Advance 90%</h3>
+                    <!-- ปุ่มซ่อน/แสดงรายละเอียด -->
+                    <button id="adv-table-toggle-btn" data-html2canvas-ignore="true"
+                        class="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1 rounded-md flex items-center gap-1.5 transition-all font-bold text-[10px] uppercase tracking-wider border border-emerald-100">
+                        <svg id="adv-table-toggle-icon" class="w-3.5 h-3.5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                        <span id="adv-table-toggle-lbl">ซ่อนรายละเอียด</span>
+                    </button>
                 </div>
                 <div class="flex gap-2 items-center" data-html2canvas-ignore="true" id="advance-filters-container">
 
@@ -362,18 +380,20 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse border border-slate-300 table-fixed">
                     <colgroup>
-                        <col style="width: 13%;"> <!-- วันที่ครบกำหนด -->
-                        <col style="width: 13%;"> <!-- เลขที่ IV -->
-                        <col style="width: 15%;"> <!-- รายละเอียด -->
-                        <col style="width: 9%;">  <!-- ประจำเดือน -->
-                        <col style="width: 16%;"> <!-- ลูกหนี้ -->
-                        <col style="width: 11%;"> <!-- สถานะ -->
-                        <col style="width: 23%;"> <!-- จำนวนเงิน Advance 90% -->
+                        <col style="width: 11%;"> <!-- วันที่ครบกำหนด -->
+                        <col style="width: 9%;">  <!-- เลข TD -->
+                        <col style="width: 11%;"> <!-- เลขที่ IV -->
+                        <col style="width: 14%;"> <!-- รายละเอียด -->
+                        <col style="width: 8%;">  <!-- ประจำเดือน -->
+                        <col style="width: 15%;"> <!-- ลูกหนี้ -->
+                        <col style="width: 10%;"> <!-- สถานะ -->
+                        <col style="width: 22%;"> <!-- จำนวนเงิน Advance 90% -->
                     </colgroup>
                     <thead>
                         <tr class="bg-emerald-600 border-b border-emerald-700 text-white font-bold text-base tracking-wide text-center"
                             style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
                             <th class="p-4 border-r border-emerald-500 whitespace-nowrap">วันที่ครบกำหนด</th>
+                            <th class="p-4 border-r border-emerald-500 whitespace-nowrap" style="background:#047857;-webkit-print-color-adjust:exact;print-color-adjust:exact;">เลข TD</th>
                             <th class="p-4 border-r border-emerald-500 whitespace-nowrap">เลขที่ IV</th>
                             <th class="p-4 border-r border-emerald-500 whitespace-nowrap">รายละเอียด</th>
                             <th class="p-3 border-r border-emerald-500 whitespace-nowrap">ประจำเดือน</th>
