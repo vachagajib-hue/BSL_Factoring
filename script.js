@@ -1452,66 +1452,66 @@ function exportAdvanceToPDF() {
 <title>รายงาน Advance 90%</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-    @page { size: A4 landscape; margin: 10mm 8mm; }
+    @page { size: A4 portrait; margin: 8mm 6mm; }
     @media print {
         body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
         .no-print { display: none !important; }
     }
     html, body { margin: 0; padding: 0; }
-    body { font-family: 'Sarabun', sans-serif; padding: 10px; color: #1e293b; font-size: 11px; }
+    body { font-family: 'Sarabun', sans-serif; padding: 8px; color: #1e293b; font-size: 9px; }
 
     /* ===== Header Banner ===== */
     .adv-banner {
         background: linear-gradient(180deg, #10b981 0%, #059669 55%, #047857 100%);
-        padding: 4px 20px 10px; position: relative; margin-bottom: 0;
+        padding: 3px 14px 7px; position: relative; margin-bottom: 0;
     }
     .adv-company-corner {
-        text-align: right; font-size: 10px; font-weight: 700; color: #fff;
-        letter-spacing: 0.18em; text-shadow: 1px 1px 0 rgba(6,95,70,0.6); margin-bottom: 2px;
+        text-align: right; font-size: 8px; font-weight: 700; color: #fff;
+        letter-spacing: 0.18em; text-shadow: 1px 1px 0 rgba(6,95,70,0.6); margin-bottom: 1px;
     }
     .adv-main-row {
-        display: flex; align-items: center; justify-content: center; gap: 18px; padding: 2px 0;
+        display: flex; align-items: center; justify-content: center; gap: 12px; padding: 1px 0;
     }
     .adv-line {
-        flex: 1; height: 4px; background: #fff;
+        flex: 1; height: 3px; background: #fff;
         box-shadow: 0 1px 2px rgba(0,0,0,0.2); border-radius: 1px;
     }
     .adv-title {
-        font-size: 28px; font-weight: 900; color: #fff; letter-spacing: 0.01em;
+        font-size: 22px; font-weight: 900; color: #fff; letter-spacing: 0.01em;
         line-height: 1; font-style: italic; white-space: nowrap;
         text-shadow: -1px 0 0 #a7f3d0, 1px 0 0 #6ee7b7, 0 2px 0 #065f46, 0 3px 3px rgba(0,0,0,0.4);
     }
     .adv-finance-tag {
-        position: absolute; right: 20px; bottom: 6px;
-        font-size: 11px; font-weight: 700; color: #fff;
+        position: absolute; right: 14px; bottom: 4px;
+        font-size: 9px; font-weight: 700; color: #fff;
         letter-spacing: 0.25em; text-transform: uppercase; font-style: italic;
         opacity: 0.95; text-shadow: 1px 1px 0 rgba(6,95,70,0.55);
     }
     .adv-gray-strip {
-        height: 8px; background: linear-gradient(180deg, #6ee7b7 0%, #34d399 100%);
+        height: 5px; background: linear-gradient(180deg, #6ee7b7 0%, #34d399 100%);
     }
     .adv-shadow-strip {
-        height: 4px; background: linear-gradient(180deg, #059669 0%, #047857 100%);
+        height: 3px; background: linear-gradient(180deg, #059669 0%, #047857 100%);
     }
     .adv-report-title {
-        text-align: center; font-size: 15px; font-weight: 700; color: #0f172a;
-        padding: 10px 16px 2px; letter-spacing: 0.02em;
+        text-align: center; font-size: 13px; font-weight: 700; color: #0f172a;
+        padding: 6px 16px 1px; letter-spacing: 0.02em;
     }
     .adv-report-subtitle {
-        text-align: center; font-size: 11px; color: #475569; font-weight: 600;
-        padding-bottom: 10px;
+        text-align: center; font-size: 9px; color: #475569; font-weight: 600;
+        padding-bottom: 6px;
     }
     .adv-report-subtitle b { color: #047857; }
-    .print-date { text-align: right; font-size: 10px; color: #94a3b8; padding-bottom: 8px; }
+    .print-date { text-align: right; font-size: 8px; color: #94a3b8; padding-bottom: 5px; }
 
     /* ===== Main Table ===== */
-    .pdf-table { width: 100%; border-collapse: collapse; font-size: 10px; color: #334155; table-layout: fixed; }
+    .pdf-table { width: 100%; border-collapse: collapse; font-size: 8px; color: #334155; table-layout: fixed; }
     .pdf-table th, .pdf-table td {
-        border: 1px solid #cbd5e1; padding: 5px 7px;
-        text-align: left; vertical-align: middle; word-wrap: break-word; line-height: 1.35;
+        border: 1px solid #cbd5e1; padding: 4px 5px;
+        text-align: left; vertical-align: middle; word-wrap: break-word; line-height: 1.3;
     }
     .pdf-table th {
-        background: #059669; font-weight: 700; text-align: center; color: #fff;
+        background: #059669; font-weight: 700; text-align: center; color: #fff; font-size: 8px;
     }
     .pdf-table th.td-col { background: #047857; }
     @media print { .pdf-table th { background: #059669 !important; color: #fff !important; } .pdf-table th.td-col { background: #047857 !important; } }
@@ -1520,27 +1520,27 @@ function exportAdvanceToPDF() {
     .debtor-cell { color: #4338ca; font-weight: 700; }
 
     /* ===== Pivot Table ===== */
-    .pivot-wrap { margin-top: 16px; page-break-inside: avoid; }
-    .pivot-wrap h4 { font-size: 12px; font-weight: 700; color: #047857; margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .pivot-wrap table { border-collapse: collapse; font-size: 10px; }
-    .pivot-wrap th { background: #4f46e5; color: #fff; padding: 5px 8px; border: 1px solid #4338ca; white-space: nowrap; }
+    .pivot-wrap { margin-top: 12px; page-break-inside: avoid; }
+    .pivot-wrap h4 { font-size: 9px; font-weight: 700; color: #047857; margin: 0 0 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .pivot-wrap table { border-collapse: collapse; font-size: 8px; }
+    .pivot-wrap th { background: #4f46e5; color: #fff; padding: 4px 6px; border: 1px solid #4338ca; white-space: nowrap; }
     @media print { .pivot-wrap th { background: #4f46e5 !important; color: #fff !important; } }
-    .pivot-wrap td { border: 1px solid #cbd5e1; padding: 4px 8px; }
+    .pivot-wrap td { border: 1px solid #cbd5e1; padding: 3px 6px; }
 
     /* ===== Grand Total ===== */
-    .pdf-grand { display: flex; justify-content: flex-end; margin-top: 12px; }
+    .pdf-grand { display: flex; justify-content: flex-end; margin-top: 8px; }
     .pdf-grand-box {
-        background: #ecfdf5; border: 1px solid #6ee7b7; padding: 10px 18px;
-        border-radius: 6px; font-size: 13px; font-weight: 700; color: #047857;
+        background: #ecfdf5; border: 1px solid #6ee7b7; padding: 6px 14px;
+        border-radius: 6px; font-size: 11px; font-weight: 700; color: #047857;
     }
 
     /* ===== Signatures ===== */
     .pdf-signatures {
-        display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px;
-        margin-top: 40px; text-align: center; font-size: 10px;
+        display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
+        margin-top: 28px; text-align: center; font-size: 8px;
         color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em;
     }
-    .pdf-sig-box { border-top: 1px solid #94a3b8; padding-top: 8px; margin: 0 12px; }
+    .pdf-sig-box { border-top: 1px solid #94a3b8; padding-top: 6px; margin: 0 8px; }
 </style>
 </head>
 <body>
@@ -1567,15 +1567,15 @@ function exportAdvanceToPDF() {
     <table class="pdf-table">
         <thead>
             <tr>
-                <th style="width:10%;">วันที่ครบกำหนด</th>
-                <th class="td-col" style="width:8%;">เลข TD</th>
-                <th style="width:9%;">เลขที่ IV</th>
-                <th style="width:16%;">รายละเอียด</th>
-                <th style="width:7%;">ประจำเดือน</th>
-                <th style="width:15%;">ลูกหนี้</th>
-                <th style="width:8%;">สถานะ</th>
+                <th style="width:11%;">วันที่ครบกำหนด</th>
+                <th class="td-col" style="width:13%;">เลข TD</th>
+                <th style="width:11%;">เลขที่ IV</th>
+                <th style="width:20%;">รายละเอียด</th>
+                <th style="width:9%;">ประจำเดือน</th>
+                <th style="width:16%;">ลูกหนี้</th>
+                <th style="width:7%;">สถานะ</th>
                 <th style="width:10%;">เลขที่เช็ค</th>
-                <th class="numeric" style="width:17%;">ยอด Advance 90%</th>
+                <th class="numeric" style="width:13%;">ยอด Advance 90%</th>
             </tr>
         </thead>
         <tbody>${tbodyHtml}</tbody>
