@@ -1274,8 +1274,8 @@ function renderTable(data) {
         return `
             <tr class="border-b border-slate-300 hover:bg-slate-50 transition-colors group text-center">
                 <td class="p-4 text-slate-500 font-medium border-r border-slate-300 whitespace-nowrap">${r.c}</td>
-                <td class="p-4 font-bold text-violet-700 border-r border-slate-300 whitespace-nowrap overflow-hidden text-ellipsis">${tdDisplay}</td>
-                <td class="p-4 font-bold text-slate-700 border-r border-slate-300 whitespace-nowrap overflow-hidden text-ellipsis">${r.f}</td>
+                <td class="p-4 font-bold text-violet-700 border-r border-slate-300 whitespace-nowrap">${tdDisplay}</td>
+                <td class="p-4 font-bold text-slate-700 border-r border-slate-300 whitespace-nowrap">${r.f}</td>
                 <td class="p-4 text-slate-600 border-r border-slate-300 whitespace-normal text-left">${r.g}</td>
                 <td class="p-4 text-slate-500 border-r border-slate-300 whitespace-nowrap">${r.h}</td>
                 <td class="p-4 font-bold text-indigo-600 border-r border-slate-300 whitespace-normal text-left">${r.i}</td>
