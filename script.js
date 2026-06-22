@@ -1528,11 +1528,13 @@ function exportAdvanceToPDF() {
     .pivot-wrap td { border: 1px solid #cbd5e1; padding: 3px 6px; }
 
     /* ===== Grand Total ===== */
-    .pdf-grand { display: flex; justify-content: flex-end; margin-top: 8px; }
+    .pdf-grand { display: flex; justify-content: flex-end; margin-top: 10px; border-top: 1px solid #e2e8f0; padding-top: 10px; }
     .pdf-grand-box {
-        background: #ecfdf5; border: 1px solid #6ee7b7; padding: 6px 14px;
-        border-radius: 6px; font-size: 11px; font-weight: 700; color: #047857;
+        background: #ecfdf5; border: 1px solid #6ee7b7; padding: 8px 20px;
+        border-radius: 8px; display: flex; align-items: center; gap: 12px;
     }
+    .pdf-grand-label { font-size: 8px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; }
+    .pdf-grand-amount { font-size: 16px; font-weight: 900; color: #047857; }
 
     /* ===== Signatures ===== */
     .pdf-signatures {
@@ -1581,11 +1583,14 @@ function exportAdvanceToPDF() {
         <tbody>${tbodyHtml}</tbody>
     </table>
 
-    <div class="pdf-grand">
-        <div class="pdf-grand-box">ยอดรวมทั้งสิ้น: ฿ ${grandTotal}</div>
-    </div>
-
     ${summaryHtml ? `<div class="pivot-wrap"><h4>ตารางสรุปยอด Advance 90% แยกตามลูกหนี้</h4>${summaryHtml}</div>` : ''}
+
+    <div class="pdf-grand">
+        <div class="pdf-grand-box">
+            <span class="pdf-grand-label">ยอดเงินรวม:</span>
+            <span class="pdf-grand-amount">฿ ${grandTotal}</span>
+        </div>
+    </div>
 
     <div class="pdf-signatures">
         <div><div class="pdf-sig-box">ผู้จัดทำ</div></div>
