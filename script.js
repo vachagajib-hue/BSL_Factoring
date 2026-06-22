@@ -1273,15 +1273,15 @@ function renderTable(data) {
         const tdDisplay = r.td || '-';
         return `
             <tr class="border-b border-slate-300 hover:bg-slate-50 transition-colors group text-center">
-                <td class="p-4 text-slate-500 font-medium border-r border-slate-300 break-words whitespace-nowrap">${r.c}</td>
-                <td class="p-4 font-bold text-violet-700 border-r border-slate-300 break-words whitespace-nowrap">${tdDisplay}</td>
-                <td class="p-4 font-bold text-slate-700 border-r border-slate-300 break-words whitespace-nowrap">${r.f}</td>
-                <td class="p-4 text-slate-600 border-r border-slate-300 break-words whitespace-normal text-left">${r.g}</td>
-                <td class="p-4 text-slate-500 border-r border-slate-300 break-words whitespace-normal">${r.h}</td>
-                <td class="p-4 font-bold text-indigo-600 border-r border-slate-300 break-words whitespace-normal text-left">${r.i}</td>
-                <td class="p-4 text-slate-500 border-r border-slate-300 break-words whitespace-nowrap">${r.s || ''}</td>
-                <td class="p-4 ${noteClass} border-r border-slate-300 break-words whitespace-normal">${note}</td>
-                <td class="p-4 text-right font-black text-slate-800 break-words whitespace-nowrap">${formatMoney(r.n)}</td>
+                <td class="p-4 text-slate-500 font-medium border-r border-slate-300 whitespace-nowrap">${r.c}</td>
+                <td class="p-4 font-bold text-violet-700 border-r border-slate-300 whitespace-nowrap overflow-hidden text-ellipsis">${tdDisplay}</td>
+                <td class="p-4 font-bold text-slate-700 border-r border-slate-300 whitespace-nowrap overflow-hidden text-ellipsis">${r.f}</td>
+                <td class="p-4 text-slate-600 border-r border-slate-300 whitespace-normal text-left">${r.g}</td>
+                <td class="p-4 text-slate-500 border-r border-slate-300 whitespace-nowrap">${r.h}</td>
+                <td class="p-4 font-bold text-indigo-600 border-r border-slate-300 whitespace-normal text-left">${r.i}</td>
+                <td class="p-4 text-slate-500 border-r border-slate-300 whitespace-nowrap">${r.s || ''}</td>
+                <td class="p-4 ${noteClass} border-r border-slate-300 whitespace-normal">${note}</td>
+                <td class="p-4 text-right font-black text-slate-800 whitespace-nowrap">${formatMoney(r.n)}</td>
             </tr>
         `;
     }).join('');
