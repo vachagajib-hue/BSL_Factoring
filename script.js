@@ -1537,10 +1537,10 @@ function exportAdvanceToPDF() {
     /* ===== Signatures ===== */
     .pdf-signatures {
         display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
-        margin-top: 28px; text-align: center; font-size: 8px;
+        margin-top: 60px; text-align: center; font-size: 8px;
         color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em;
     }
-    .pdf-sig-box { border-top: 1px solid #94a3b8; padding-top: 6px; margin: 0 8px; }
+    .pdf-sig-box { border-top: 1px solid #94a3b8; padding-top: 6px; margin: 0 8px; min-height: 50px; display: flex; align-items: flex-end; justify-content: center; }
 </style>
 </head>
 <body>
