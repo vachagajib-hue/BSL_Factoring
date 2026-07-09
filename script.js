@@ -46,8 +46,7 @@ let DATA1_COL = {
     remain: 16,   // Q - ยอดคงเหลือรับ 10%
     status: 17,   // R - สถานะ
     note: 19,     // T - หมายเหตุ
-    payMonth: 21, // V - เดือนที่กำหนดชำระ
-    cheque: 22    // W - เลขที่เช็ค
+    payMonth: 21  // V - เดือนที่กำหนดชำระ
 };
 
 // --- Top Loading Bar ---
@@ -273,6 +272,7 @@ function processRealData(summary, details) {
         applyTableFilter();
         populateAdvanceFilters(details.data);
         applyAdvanceFilter();
+        populateCmpYearFilter(details.data);
     }
 }
 
@@ -1004,7 +1004,6 @@ function applyAdvanceFilter() {
                 h: row[DATA1_COL.jobType] || "",
                 i: row[DATA1_COL.debtor],
                 s: row[DATA1_COL.status],
-                chq: (row[DATA1_COL.cheque] || "").toString().trim(),
                 n: amt,
                 _dateVal: (p.y && p.m && p.d) ? parseInt(p.y + p.m + p.d, 10) : 0
             });
@@ -1048,7 +1047,6 @@ function renderAdvanceTable(data) {
 
     body.innerHTML = validData.map(r => {
         const tdDisplay = r.td || '-';
-        const chqDisplay = r.chq || '-';
         return `
         <tr class="border-b border-slate-300 hover:bg-slate-50 transition-colors text-center">
             <td class="p-4 text-slate-500 font-medium border-r border-slate-300 whitespace-nowrap">${r.c}</td>
@@ -1058,7 +1056,6 @@ function renderAdvanceTable(data) {
             <td class="p-4 text-slate-500 border-r border-slate-300 whitespace-normal">${r.h}</td>
             <td class="p-4 font-bold text-indigo-600 border-r border-slate-300 whitespace-normal text-left">${r.i}</td>
             <td class="p-4 text-slate-500 border-r border-slate-300 whitespace-nowrap">${r.s || ''}</td>
-            <td class="p-4 font-medium text-slate-600 border-r border-slate-300 whitespace-nowrap">${chqDisplay}</td>
             <td class="p-4 text-right font-black text-emerald-700 whitespace-nowrap">${formatMoney(r.n)}</td>
         </tr>
     `}).join('');
@@ -1273,15 +1270,15 @@ function renderTable(data) {
         const tdDisplay = r.td || '-';
         return `
             <tr class="border-b border-slate-300 hover:bg-slate-50 transition-colors group text-center">
-                <td class="p-4 text-slate-500 font-medium border-r border-slate-300 whitespace-nowrap">${r.c}</td>
-                <td class="p-4 font-bold text-violet-700 border-r border-slate-300 whitespace-nowrap">${tdDisplay}</td>
-                <td class="p-4 font-bold text-slate-700 border-r border-slate-300 whitespace-nowrap">${r.f}</td>
-                <td class="p-4 text-slate-600 border-r border-slate-300 whitespace-normal text-left">${r.g}</td>
-                <td class="p-4 text-slate-500 border-r border-slate-300 whitespace-nowrap">${r.h}</td>
-                <td class="p-4 font-bold text-indigo-600 border-r border-slate-300 whitespace-normal text-left">${r.i}</td>
-                <td class="p-4 text-slate-500 border-r border-slate-300 whitespace-nowrap">${r.s || ''}</td>
-                <td class="p-4 ${noteClass} border-r border-slate-300 whitespace-normal">${note}</td>
-                <td class="p-4 text-right font-black text-slate-800 whitespace-nowrap">${formatMoney(r.n)}</td>
+                <td class="p-4 text-slate-500 font-medium border-r border-slate-300 break-words whitespace-nowrap">${r.c}</td>
+                <td class="p-4 font-bold text-violet-700 border-r border-slate-300 break-words whitespace-nowrap">${tdDisplay}</td>
+                <td class="p-4 font-bold text-slate-700 border-r border-slate-300 break-words whitespace-nowrap">${r.f}</td>
+                <td class="p-4 text-slate-600 border-r border-slate-300 break-words whitespace-normal text-left">${r.g}</td>
+                <td class="p-4 text-slate-500 border-r border-slate-300 break-words whitespace-normal">${r.h}</td>
+                <td class="p-4 font-bold text-indigo-600 border-r border-slate-300 break-words whitespace-normal text-left">${r.i}</td>
+                <td class="p-4 text-slate-500 border-r border-slate-300 break-words whitespace-nowrap">${r.s || ''}</td>
+                <td class="p-4 ${noteClass} border-r border-slate-300 break-words whitespace-normal">${note}</td>
+                <td class="p-4 text-right font-black text-slate-800 break-words whitespace-nowrap">${formatMoney(r.n)}</td>
             </tr>
         `;
     }).join('');
@@ -1411,210 +1408,6 @@ function exportToPDF() {
     setTimeout(() => {
         window.print();
     }, 300);
-}
-
-function exportAdvanceToPDF() {
-    // ดึงข้อมูลที่กรองอยู่จาก advance table body
-    const body = document.getElementById('advance-table-body');
-    const summaryContainer = document.getElementById('advance-summary-container');
-    const totalEl = document.getElementById('advance-total-amount');
-    if (!body) return;
-
-    // สร้างรายการ filter label สำหรับ subtitle
-    const filterParts = [];
-    const statusLabel = document.getElementById('adv-status-filter-label');
-    const monthLabel  = document.getElementById('adv-month-filter-label');
-    const yearLabel   = document.getElementById('adv-year-filter-label');
-    if (statusLabel && !statusLabel.textContent.includes('ทั้งหมด')) filterParts.push(statusLabel.textContent);
-    if (monthLabel  && !monthLabel.textContent.includes('ทั้งหมด'))  filterParts.push(monthLabel.textContent);
-    if (yearLabel   && !yearLabel.textContent.includes('ทั้งหมด'))   filterParts.push(yearLabel.textContent);
-    const filterDesc = filterParts.length > 0 ? filterParts.join(' | ') : 'ทั้งหมด';
-
-    // ดึง HTML ของ tbody และ summary (pivot) ที่ render แล้ว
-    const tbodyHtml = body.innerHTML;
-    const summaryHtml = summaryContainer ? summaryContainer.innerHTML : '';
-    const grandTotal = totalEl ? totalEl.textContent : '0.00';
-
-    // วันที่พิมพ์
-    const now = new Date();
-    const printDate = `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()+543}`;
-
-    const previewWin = window.open('', '_blank', 'width=1200,height=900');
-    if (!previewWin) {
-        alert('เบราว์เซอร์บล็อก popup กรุณาอนุญาต popup สำหรับเว็บไซต์นี้');
-        return;
-    }
-
-    previewWin.document.open();
-    previewWin.document.write(`<!DOCTYPE html>
-<html lang="th"><head>
-<meta charset="UTF-8">
-<title>รายงาน Advance 90%</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">
-<style>
-    @page { size: A4 portrait; margin: 8mm 6mm; }
-    @media print {
-        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
-        .no-print { display: none !important; }
-    }
-    html, body { margin: 0; padding: 0; }
-    body { font-family: 'Sarabun', sans-serif; padding: 8px; color: #1e293b; font-size: 9px; }
-
-    /* ===== Header Banner ===== */
-    .adv-banner {
-        background: linear-gradient(180deg, #10b981 0%, #059669 55%, #047857 100%);
-        padding: 3px 14px 7px; position: relative; margin-bottom: 0;
-    }
-    .adv-company-corner {
-        text-align: right; font-size: 8px; font-weight: 700; color: #fff;
-        letter-spacing: 0.18em; text-shadow: 1px 1px 0 rgba(6,95,70,0.6); margin-bottom: 1px;
-    }
-    .adv-main-row {
-        display: flex; align-items: center; justify-content: center; gap: 12px; padding: 1px 0;
-    }
-    .adv-line {
-        flex: 1; height: 3px; background: #fff;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.2); border-radius: 1px;
-    }
-    .adv-title {
-        font-size: 22px; font-weight: 900; color: #fff; letter-spacing: 0.01em;
-        line-height: 1; font-style: italic; white-space: nowrap;
-        text-shadow: -1px 0 0 #a7f3d0, 1px 0 0 #6ee7b7, 0 2px 0 #065f46, 0 3px 3px rgba(0,0,0,0.4);
-    }
-    .adv-finance-tag {
-        position: absolute; right: 14px; bottom: 4px;
-        font-size: 9px; font-weight: 700; color: #fff;
-        letter-spacing: 0.25em; text-transform: uppercase; font-style: italic;
-        opacity: 0.95; text-shadow: 1px 1px 0 rgba(6,95,70,0.55);
-    }
-    .adv-gray-strip {
-        height: 5px; background: linear-gradient(180deg, #6ee7b7 0%, #34d399 100%);
-    }
-    .adv-shadow-strip {
-        height: 3px; background: linear-gradient(180deg, #059669 0%, #047857 100%);
-    }
-    .adv-report-title {
-        text-align: center; font-size: 13px; font-weight: 700; color: #0f172a;
-        padding: 6px 16px 1px; letter-spacing: 0.02em;
-    }
-    .adv-report-subtitle {
-        text-align: center; font-size: 9px; color: #475569; font-weight: 600;
-        padding-bottom: 6px;
-    }
-    .adv-report-subtitle b { color: #047857; }
-    .print-date { text-align: right; font-size: 8px; color: #94a3b8; padding-bottom: 5px; }
-
-    /* ===== Main Table ===== */
-    .pdf-table { width: 100%; border-collapse: collapse; font-size: 8px; color: #334155; table-layout: fixed; }
-    .pdf-table th, .pdf-table td {
-        border: 1px solid #cbd5e1; padding: 4px 5px;
-        text-align: left; vertical-align: middle; word-wrap: break-word; line-height: 1.3;
-    }
-    .pdf-table th {
-        background: #059669; font-weight: 700; text-align: center; color: #fff; font-size: 8px;
-    }
-    .pdf-table th.td-col { background: #047857; }
-    @media print { .pdf-table th { background: #059669 !important; color: #fff !important; } .pdf-table th.td-col { background: #047857 !important; } }
-    .numeric { text-align: right !important; white-space: nowrap; }
-    .td-cell { color: #7c3aed; font-weight: 700; }
-    .debtor-cell { color: #4338ca; font-weight: 700; }
-
-    /* ===== Pivot Table ===== */
-    .pivot-wrap { margin-top: 12px; page-break-inside: avoid; }
-    .pivot-wrap h4 { font-size: 9px; font-weight: 700; color: #047857; margin: 0 0 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .pivot-wrap table { border-collapse: collapse; font-size: 8px; }
-    .pivot-wrap th { background: #4f46e5; color: #fff; padding: 4px 6px; border: 1px solid #4338ca; white-space: nowrap; }
-    @media print { .pivot-wrap th { background: #4f46e5 !important; color: #fff !important; } }
-    .pivot-wrap td { border: 1px solid #cbd5e1; padding: 3px 6px; }
-
-    /* ===== Grand Total ===== */
-    .pdf-grand { display: flex; justify-content: flex-end; margin-top: 10px; border-top: 1px solid #e2e8f0; padding-top: 10px; }
-    .pdf-grand-box {
-        background: #ecfdf5; border: 1px solid #6ee7b7; padding: 8px 20px;
-        border-radius: 8px; display: flex; align-items: center; gap: 12px;
-    }
-    .pdf-grand-label { font-size: 8px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; }
-    .pdf-grand-amount { font-size: 16px; font-weight: 900; color: #047857; }
-
-    /* ===== Signatures ===== */
-    .pdf-signatures {
-        display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
-        margin-top: 60px; text-align: center; font-size: 8px;
-        color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em;
-    }
-    .pdf-sig-box { border-top: 1px solid #94a3b8; padding-top: 6px; margin: 0 8px; min-height: 50px; display: flex; align-items: flex-end; justify-content: center; }
-</style>
-</head>
-<body>
-    <div>
-        <div class="adv-banner">
-            <div class="adv-company-corner">บริษัท รถเจาะไทย จำกัด</div>
-            <div class="adv-main-row">
-                <div class="adv-line"></div>
-                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-                    <div class="adv-title">ThaiDrill</div>
-                    <div style="width:90%;height:3px;background:#fff;border-radius:1px;box-shadow:0 1px 2px rgba(0,0,0,0.25);"></div>
-                </div>
-                <div class="adv-line"></div>
-            </div>
-            <div class="adv-finance-tag">Finance</div>
-        </div>
-        <div class="adv-gray-strip"></div>
-        <div class="adv-shadow-strip"></div>
-        <div class="adv-report-title">รายงานยอด Advance 90%</div>
-        <div class="adv-report-subtitle">ตัวกรอง: <b>${filterDesc}</b></div>
-        <div class="print-date">พิมพ์วันที่: ${printDate}</div>
-    </div>
-
-    <table class="pdf-table">
-        <thead>
-            <tr>
-                <th style="width:11%;">วันที่ครบกำหนด</th>
-                <th class="td-col" style="width:13%;">เลข TD</th>
-                <th style="width:11%;">เลขที่ IV</th>
-                <th style="width:20%;">รายละเอียด</th>
-                <th style="width:9%;">ประจำเดือน</th>
-                <th style="width:16%;">ลูกหนี้</th>
-                <th style="width:7%;">สถานะ</th>
-                <th style="width:10%;">เลขที่เช็ค</th>
-                <th class="numeric" style="width:13%;">ยอด Advance 90%</th>
-            </tr>
-        </thead>
-        <tbody>${tbodyHtml}</tbody>
-    </table>
-
-    ${summaryHtml ? `<div class="pivot-wrap"><h4>ตารางสรุปยอด Advance 90% แยกตามลูกหนี้</h4>${summaryHtml}</div>` : ''}
-
-    <div class="pdf-grand">
-        <div class="pdf-grand-box">
-            <span class="pdf-grand-label">ยอดเงินรวม:</span>
-            <span class="pdf-grand-amount">฿ ${grandTotal}</span>
-        </div>
-    </div>
-
-    <div class="pdf-signatures">
-        <div><div class="pdf-sig-box">ผู้จัดทำ</div></div>
-        <div><div class="pdf-sig-box">ผู้ตรวจสอบ</div></div>
-        <div><div class="pdf-sig-box">ผู้อนุมัติ</div></div>
-    </div>
-
-<script>
-(function(){
-    function doPrint(){
-        try { window.focus(); window.print(); } catch(e){ console.error(e); }
-    }
-    function ready(cb){
-        if (document.fonts && document.fonts.ready) {
-            document.fonts.ready.then(function(){ setTimeout(cb, 350); });
-        } else {
-            setTimeout(cb, 700);
-        }
-    }
-    window.addEventListener('load', function(){ ready(doPrint); });
-})();
-<\/script>
-</body></html>`);
-    previewWin.document.close();
 }
 
 /* =====================================================================
@@ -2072,3 +1865,124 @@ document.addEventListener('DOMContentLoaded', () => {
         bslRenderCalendar();
     });
 });
+// =====================================================================
+// เปรียบเทียบยอดรับ 90% ตามบริษัท (รายเดือน) — Year Filter & Pivot Table
+// =====================================================================
+let cmpSelectedYear = '';
+let cmpUniqueYearsList = [];
+
+const CMP_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+
+function populateCmpYearFilter(data) {
+    const yearSet = new Set();
+    data.forEach(row => {
+        const debtorName = (row[DATA1_COL.debtor] || "").toString().trim();
+        if (!debtorName || debtorName === "ลูกหนี้" || debtorName === "ชื่อลูกหนี้" || debtorName === "Debtor") return;
+        const p = parseDateParts(row[DATA1_COL.date]); // คอลัมน์ B - วันที่เบิกเงิน
+        if (p.y) yearSet.add(p.y);
+    });
+
+    const sel = document.getElementById('cmp-year-select');
+    if (!sel) return;
+
+    cmpUniqueYearsList = Array.from(yearSet).sort();
+    sel.innerHTML = cmpUniqueYearsList.map(y => `<option value="${y}">${y}</option>`).join('');
+
+    // ค่าเริ่มต้น = ปีล่าสุดที่มีข้อมูล
+    cmpSelectedYear = cmpUniqueYearsList.length ? cmpUniqueYearsList[cmpUniqueYearsList.length - 1] : '';
+    sel.value = cmpSelectedYear;
+
+    if (!sel._bslBound) {
+        sel._bslBound = true;
+        sel.addEventListener('change', () => {
+            cmpSelectedYear = sel.value;
+            renderCmpTable();
+        });
+    }
+
+    renderCmpTable();
+}
+
+function renderCmpTable() {
+    const thead = document.getElementById('cmp-table-thead');
+    const tbody = document.getElementById('cmp-table-body');
+    const tfoot = document.getElementById('cmp-table-foot');
+    if (!thead || !tbody || !tfoot) return;
+
+    // ===== ส่วนหัวตาราง: บริษัท + ม.ค.-ธ.ค. + รวม =====
+    const monthThs = CMP_MONTHS_SHORT.map(m =>
+        `<th class="p-3 border border-violet-500 text-center whitespace-nowrap">${m}</th>`
+    ).join('');
+    thead.innerHTML = `
+        <tr class="bg-violet-600 text-white font-bold" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+            <th class="p-3 border border-violet-500 text-left whitespace-nowrap" style="min-width:220px;">บริษัท</th>
+            ${monthThs}
+            <th class="p-3 border border-violet-500 text-center whitespace-nowrap" style="background:#5b21b6;-webkit-print-color-adjust:exact;print-color-adjust:exact;">รวม</th>
+        </tr>`;
+
+    if (!cmpSelectedYear) {
+        tbody.innerHTML = `<tr><td colspan="14" class="p-8 text-center text-slate-400 italic">ไม่พบข้อมูล</td></tr>`;
+        tfoot.innerHTML = '';
+        return;
+    }
+
+    // ===== รวมยอด Advance 90% (คอลัมน์ P) ต่อบริษัท/เดือน สำหรับปีที่เลือก (อ้างอิงวันที่เบิกเงิน คอลัมน์ B) =====
+    const byCompany = {}; // { name: { months:[12], total } }
+    const companyOrder = [];
+    const monthTotals = Array(12).fill(0);
+    let grandTotal = 0;
+
+    RAW_DATA1.forEach(row => {
+        const name = (row[DATA1_COL.debtor] || "").toString().trim();
+        if (!name || name === "ลูกหนี้" || name === "ชื่อลูกหนี้" || name === "Debtor") return;
+
+        const p = parseDateParts(row[DATA1_COL.date]); // คอลัมน์ B
+        if (p.y !== cmpSelectedYear || !p.m) return;
+
+        const mIdx = parseInt(p.m, 10) - 1;
+        if (mIdx < 0 || mIdx > 11) return;
+
+        const amt = parseNumber(row[DATA1_COL.used]); // คอลัมน์ P - ยอด Advance 90%
+        if (!byCompany[name]) {
+            byCompany[name] = { months: Array(12).fill(0), total: 0 };
+            companyOrder.push(name);
+        }
+        byCompany[name].months[mIdx] += amt;
+        byCompany[name].total += amt;
+        monthTotals[mIdx] += amt;
+        grandTotal += amt;
+    });
+
+    if (companyOrder.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="14" class="p-8 text-center text-slate-400 italic">ไม่พบข้อมูลในปีที่เลือก</td></tr>`;
+        tfoot.innerHTML = '';
+        return;
+    }
+
+    // เรียงบริษัทตามยอดรวมมากไปน้อย เพื่อให้เห็นบริษัทที่รับยอด Advance สูงสุดก่อน
+    companyOrder.sort((a, b) => byCompany[b].total - byCompany[a].total);
+
+    tbody.innerHTML = companyOrder.map(name => {
+        const row = byCompany[name];
+        const cells = row.months.map(amt =>
+            `<td class="p-2 border border-slate-300 text-right whitespace-nowrap ${amt > 0 ? 'text-slate-700 font-medium' : 'text-slate-300'}">${amt > 0 ? formatMoney(amt) : '-'}</td>`
+        ).join('');
+        return `
+        <tr class="hover:bg-slate-50 border-b border-slate-200">
+            <td class="p-2 border border-slate-300 font-bold text-violet-700 whitespace-normal">${name}</td>
+            ${cells}
+            <td class="p-2 border border-slate-300 text-right font-black text-violet-700 whitespace-nowrap">${formatMoney(row.total)}</td>
+        </tr>`;
+    }).join('');
+
+    const footerCells = monthTotals.map(amt =>
+        `<td class="p-2 border border-violet-400 text-right font-black whitespace-nowrap" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#4c1d95;color:#fff;">${formatMoney(amt)}</td>`
+    ).join('');
+
+    tfoot.innerHTML = `
+        <tr style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#4c1d95;">
+            <td class="p-2 border border-violet-400 font-black whitespace-nowrap" style="background:#4c1d95;color:#fff;letter-spacing:0.05em;">รวมทั้งสิ้น</td>
+            ${footerCells}
+            <td class="p-2 border border-violet-400 text-right font-black whitespace-nowrap" style="background:#4c1d95;color:#fff;">${formatMoney(grandTotal)}</td>
+        </tr>`;
+}
