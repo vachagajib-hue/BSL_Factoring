@@ -2204,6 +2204,8 @@ function updateVarTrendChart() {
         return;
     }
 
+    if (typeof ChartDataLabels !== 'undefined') Chart.register(ChartDataLabels);
+
     varTrendChartInst = new Chart(canvas, {
         type: 'line',
         data: {
@@ -2217,7 +2219,8 @@ function updateVarTrendChart() {
                     borderWidth: 2,
                     pointRadius: 4,
                     pointBackgroundColor: '#7c3aed',
-                    tension: 0.25
+                    tension: 0.25,
+                    datalabels: { anchor: 'end', align: 'top', offset: 6 }
                 },
                 {
                     label: 'ยอดคืน 90%',
@@ -2229,15 +2232,22 @@ function updateVarTrendChart() {
                     pointRadius: 4,
                     pointStyle: 'rectRot',
                     pointBackgroundColor: '#0891b2',
-                    tension: 0.25
+                    tension: 0.25,
+                    datalabels: { anchor: 'end', align: 'bottom', offset: 6 }
                 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            layout: { padding: { top: 24, bottom: 24 } },
             plugins: {
                 legend: { display: false },
+                datalabels: {
+                    color: '#475569',
+                    font: { weight: 'bold', size: 10 },
+                    formatter: (v) => v > 0 ? (v / 1000000).toFixed(1) + 'M' : ''
+                },
                 tooltip: {
                     callbacks: {
                         label: (ctx) => ctx.dataset.label + ': ' + formatMoney(ctx.parsed.y)
@@ -2247,7 +2257,7 @@ function updateVarTrendChart() {
             scales: {
                 y: {
                     beginAtZero: true,
-                    ticks: { callback: (v) => (v / 1000) + 'k' },
+                    ticks: { callback: (v) => (v / 1000000) + 'M' },
                     grid: { color: '#e5e7eb' }
                 },
                 x: {
