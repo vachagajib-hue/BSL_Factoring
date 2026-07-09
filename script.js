@@ -273,6 +273,7 @@ function processRealData(summary, details) {
         populateAdvanceFilters(details.data);
         applyAdvanceFilter();
         populateCmpYearFilter(details.data);
+        populateRetYearFilter(details.data);
     }
 }
 
@@ -1827,6 +1828,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnClose = document.getElementById('closePdfModal');
     if (btnClose) btnClose.addEventListener('click', closeBslPDFModal);
 
+    // ปุ่มย่อ/ขยายกล่องรายงานครบกำหนดชำระ + ยอด Advance 90% พร้อมกัน
+    const btnToggleDetail = document.getElementById('btnToggleDetailTables');
+    if (btnToggleDetail) btnToggleDetail.addEventListener('click', toggleDetailTables);
+
     const overlay = document.getElementById('pdfModal');
     if (overlay) overlay.addEventListener('click', (e) => {
         if (e.target === overlay) closeBslPDFModal();
@@ -1870,6 +1875,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // =====================================================================
 let cmpSelectedYear = '';
 let cmpUniqueYearsList = [];
+let cmpMonthTotals = Array(12).fill(0);
+let cmpGrandTotal = 0;
 
 const CMP_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
@@ -1923,6 +1930,9 @@ function renderCmpTable() {
     if (!cmpSelectedYear) {
         tbody.innerHTML = `<tr><td colspan="14" class="p-8 text-center text-slate-400 italic">ไม่พบข้อมูล</td></tr>`;
         tfoot.innerHTML = '';
+        cmpMonthTotals = Array(12).fill(0);
+        cmpGrandTotal = 0;
+        renderVarianceSummary();
         return;
     }
 
@@ -1956,6 +1966,9 @@ function renderCmpTable() {
     if (companyOrder.length === 0) {
         tbody.innerHTML = `<tr><td colspan="14" class="p-8 text-center text-slate-400 italic">ไม่พบข้อมูลในปีที่เลือก</td></tr>`;
         tfoot.innerHTML = '';
+        cmpMonthTotals = Array(12).fill(0);
+        cmpGrandTotal = 0;
+        renderVarianceSummary();
         return;
     }
 
@@ -1985,4 +1998,217 @@ function renderCmpTable() {
             ${footerCells}
             <td class="p-2 border border-violet-400 text-right font-black whitespace-nowrap" style="background:#4c1d95;color:#fff;">${formatMoney(grandTotal)}</td>
         </tr>`;
+
+    cmpMonthTotals = monthTotals;
+    cmpGrandTotal = grandTotal;
+    renderVarianceSummary();
+}
+
+// =====================================================================
+// เปรียบเทียบยอดคืน 90% ตามบริษัท (รายเดือน ตามเดือนที่กำหนดชำระ คอลัมน์ V)
+// =====================================================================
+let retSelectedYear = '';
+let retUniqueYearsList = [];
+let retMonthTotals = Array(12).fill(0);
+let retGrandTotal = 0;
+
+function populateRetYearFilter(data) {
+    const yearSet = new Set();
+    data.forEach(row => {
+        const debtorName = (row[DATA1_COL.debtor] || "").toString().trim();
+        if (!debtorName || debtorName === "ลูกหนี้" || debtorName === "ชื่อลูกหนี้" || debtorName === "Debtor") return;
+        const p = parseDateParts(row[DATA1_COL.payMonth]); // คอลัมน์ V - เดือนที่กำหนดชำระ
+        if (p.y) yearSet.add(p.y);
+    });
+
+    const sel = document.getElementById('ret-year-select');
+    if (!sel) return;
+
+    retUniqueYearsList = Array.from(yearSet).sort();
+    sel.innerHTML = retUniqueYearsList.map(y => `<option value="${y}">${y}</option>`).join('');
+
+    // ค่าเริ่มต้น = ปีล่าสุดที่มีข้อมูล
+    retSelectedYear = retUniqueYearsList.length ? retUniqueYearsList[retUniqueYearsList.length - 1] : '';
+    sel.value = retSelectedYear;
+
+    if (!sel._bslBound) {
+        sel._bslBound = true;
+        sel.addEventListener('change', () => {
+            retSelectedYear = sel.value;
+            renderRetTable();
+        });
+    }
+
+    renderRetTable();
+}
+
+function renderRetTable() {
+    const thead = document.getElementById('ret-table-thead');
+    const tbody = document.getElementById('ret-table-body');
+    const tfoot = document.getElementById('ret-table-foot');
+    if (!thead || !tbody || !tfoot) return;
+
+    // ===== ส่วนหัวตาราง: บริษัท + ม.ค.-ธ.ค. + รวม =====
+    const monthThs = CMP_MONTHS_SHORT.map(m =>
+        `<th class="p-3 border border-cyan-500 text-center whitespace-nowrap">${m}</th>`
+    ).join('');
+    thead.innerHTML = `
+        <tr class="bg-cyan-600 text-white font-bold" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+            <th class="p-3 border border-cyan-500 text-left whitespace-nowrap" style="min-width:220px;">บริษัท</th>
+            ${monthThs}
+            <th class="p-3 border border-cyan-500 text-center whitespace-nowrap" style="background:#155e75;-webkit-print-color-adjust:exact;print-color-adjust:exact;">รวม</th>
+        </tr>`;
+
+    if (!retSelectedYear) {
+        tbody.innerHTML = `<tr><td colspan="14" class="p-8 text-center text-slate-400 italic">ไม่พบข้อมูล</td></tr>`;
+        tfoot.innerHTML = '';
+        retMonthTotals = Array(12).fill(0);
+        retGrandTotal = 0;
+        renderVarianceSummary();
+        return;
+    }
+
+    // ===== รวมยอด Advance 90% (คอลัมน์ P) ต่อบริษัท/เดือน สำหรับปีที่เลือก (อ้างอิงเดือนที่กำหนดชำระ คอลัมน์ V) =====
+    const byCompany = {}; // { name: { months:[12], total } }
+    const companyOrder = [];
+    const monthTotals = Array(12).fill(0);
+    let grandTotal = 0;
+
+    RAW_DATA1.forEach(row => {
+        const name = (row[DATA1_COL.debtor] || "").toString().trim();
+        if (!name || name === "ลูกหนี้" || name === "ชื่อลูกหนี้" || name === "Debtor") return;
+
+        const p = parseDateParts(row[DATA1_COL.payMonth]); // คอลัมน์ V
+        if (p.y !== retSelectedYear || !p.m) return;
+
+        const mIdx = parseInt(p.m, 10) - 1;
+        if (mIdx < 0 || mIdx > 11) return;
+
+        const amt = parseNumber(row[DATA1_COL.used]); // คอลัมน์ P - ยอด Advance 90% (ยอดเดียวกับตารางยอดรับ)
+        if (!byCompany[name]) {
+            byCompany[name] = { months: Array(12).fill(0), total: 0 };
+            companyOrder.push(name);
+        }
+        byCompany[name].months[mIdx] += amt;
+        byCompany[name].total += amt;
+        monthTotals[mIdx] += amt;
+        grandTotal += amt;
+    });
+
+    if (companyOrder.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="14" class="p-8 text-center text-slate-400 italic">ไม่พบข้อมูลในปีที่เลือก</td></tr>`;
+        tfoot.innerHTML = '';
+        retMonthTotals = Array(12).fill(0);
+        retGrandTotal = 0;
+        renderVarianceSummary();
+        return;
+    }
+
+    // เรียงบริษัทตามยอดรวมมากไปน้อย
+    companyOrder.sort((a, b) => byCompany[b].total - byCompany[a].total);
+
+    tbody.innerHTML = companyOrder.map(name => {
+        const row = byCompany[name];
+        const cells = row.months.map(amt =>
+            `<td class="p-2 border border-slate-300 text-right whitespace-nowrap ${amt > 0 ? 'text-slate-700 font-medium' : 'text-slate-300'}">${amt > 0 ? formatMoney(amt) : '-'}</td>`
+        ).join('');
+        return `
+        <tr class="hover:bg-slate-50 border-b border-slate-200">
+            <td class="p-2 border border-slate-300 font-bold text-cyan-700 whitespace-normal">${name}</td>
+            ${cells}
+            <td class="p-2 border border-slate-300 text-right font-black text-cyan-700 whitespace-nowrap">${formatMoney(row.total)}</td>
+        </tr>`;
+    }).join('');
+
+    const footerCells = monthTotals.map(amt =>
+        `<td class="p-2 border border-cyan-400 text-right font-black whitespace-nowrap" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#164e63;color:#fff;">${formatMoney(amt)}</td>`
+    ).join('');
+
+    tfoot.innerHTML = `
+        <tr style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#164e63;">
+            <td class="p-2 border border-cyan-400 font-black whitespace-nowrap" style="background:#164e63;color:#fff;letter-spacing:0.05em;">รวมทั้งสิ้น</td>
+            ${footerCells}
+            <td class="p-2 border border-cyan-400 text-right font-black whitespace-nowrap" style="background:#164e63;color:#fff;">${formatMoney(grandTotal)}</td>
+        </tr>`;
+
+    retMonthTotals = monthTotals;
+    retGrandTotal = grandTotal;
+    renderVarianceSummary();
+}
+
+// =====================================================================
+// สรุปส่วนต่าง ยอดรับ 90% (คอลัมน์ B) vs ยอดคืน 90% (คอลัมน์ V)
+// =====================================================================
+function renderVarianceSummary() {
+    const thead = document.getElementById('var-summary-thead');
+    const tbody = document.getElementById('var-summary-body');
+    const note = document.getElementById('var-summary-note');
+    if (!thead || !tbody) return;
+
+    const monthThs = CMP_MONTHS_SHORT.map(m =>
+        `<th class="p-3 border border-amber-500 text-center whitespace-nowrap">${m}</th>`
+    ).join('');
+    thead.innerHTML = `
+        <tr class="bg-slate-700 text-white font-bold" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+            <th class="p-3 border border-slate-600 text-left whitespace-nowrap" style="min-width:220px;">รายการ</th>
+            ${monthThs}
+            <th class="p-3 border border-slate-600 text-center whitespace-nowrap">รวม</th>
+        </tr>`;
+
+    if (note) {
+        note.textContent = (cmpSelectedYear || retSelectedYear)
+            ? `(รับปี ${cmpSelectedYear || '-'} เทียบกับ คืนปี ${retSelectedYear || '-'})`
+            : '';
+    }
+
+    const diffMonths = cmpMonthTotals.map((v, i) => v - (retMonthTotals[i] || 0));
+    const diffTotal = cmpGrandTotal - retGrandTotal;
+
+    const rowHtml = (label, values, total, bandColor, borderColor, isDiff) => {
+        const cells = values.map(amt => {
+            const isNeg = isDiff && amt < 0;
+            const displayAmt = isDiff ? (amt === 0 ? '0.00' : formatMoney(Math.abs(amt)) ) : formatMoney(amt);
+            const sign = isDiff && amt < 0 ? '-' : '';
+            return `<td class="p-2 border ${borderColor} text-right whitespace-nowrap font-medium" ${isNeg ? 'style="color:#fecaca;"' : ''}>${sign}${displayAmt}</td>`;
+        }).join('');
+        const totalNeg = isDiff && total < 0;
+        const totalDisplay = isDiff ? (total === 0 ? '0.00' : formatMoney(Math.abs(total))) : formatMoney(total);
+        const totalSign = isDiff && total < 0 ? '-' : '';
+        return `
+        <tr style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:${bandColor};">
+            <td class="p-2 border ${borderColor} font-bold text-white whitespace-nowrap" style="background:${bandColor};">${label}</td>
+            ${cells}
+            <td class="p-2 border ${borderColor} text-right font-black whitespace-nowrap" style="background:${bandColor};color:#fff;${totalNeg ? 'color:#fecaca;' : ''}">${totalSign}${totalDisplay}</td>
+        </tr>`;
+    };
+
+    tbody.innerHTML =
+        rowHtml('รวมยอดรับ 90%', cmpMonthTotals, cmpGrandTotal, '#4c1d95', 'border-violet-800', false) +
+        rowHtml('รวมยอดคืน 90%', retMonthTotals, retGrandTotal, '#164e63', 'border-cyan-800', false) +
+        rowHtml('ส่วนต่าง (รับ − คืน)', diffMonths, diffTotal, '#b45309', 'border-amber-800', true);
+}
+
+// =====================================================================
+// ปุ่มบนสุด: ย่อ/ขยายกล่องรายงานครบกำหนดชำระ + ยอด Advance 90% พร้อมกัน
+// เพื่อลดความยาวหน้าเวลาต้องเลื่อนไปดูตารางเปรียบเทียบด้านล่าง
+// =====================================================================
+let detailTablesCollapsed = false;
+
+function toggleDetailTables() {
+    detailTablesCollapsed = !detailTablesCollapsed;
+    const displayVal = detailTablesCollapsed ? 'none' : '';
+
+    const targets = [
+        'main-table-wrapper', 'report-footer-section',
+        'advance-table-wrapper', 'advance-footer-section'
+    ];
+    targets.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = displayVal;
+    });
+
+    const lbl = document.getElementById('btnToggleDetailTablesLbl');
+    const icon = document.getElementById('btnToggleDetailTablesIcon');
+    if (lbl) lbl.textContent = detailTablesCollapsed ? 'ขยายตารางรายละเอียด' : 'ย่อตารางรายละเอียด';
+    if (icon) icon.style.transform = detailTablesCollapsed ? 'rotate(-90deg)' : '';
 }
