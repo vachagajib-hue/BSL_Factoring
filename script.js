@@ -2169,16 +2169,18 @@ function renderVarianceSummary() {
             const isNeg = isDiff && amt < 0;
             const displayAmt = isDiff ? (amt === 0 ? '0.00' : formatMoney(Math.abs(amt)) ) : formatMoney(amt);
             const sign = isDiff && amt < 0 ? '-' : '';
-            return `<td class="p-2 border ${borderColor} text-right whitespace-nowrap font-medium" ${isNeg ? 'style="color:#fecaca;"' : ''}>${sign}${displayAmt}</td>`;
+            const textColor = isNeg ? '#fecaca' : '#ffffff';
+            return `<td class="p-2 border ${borderColor} text-right whitespace-nowrap font-medium" style="color:${textColor};">${sign}${displayAmt}</td>`;
         }).join('');
         const totalNeg = isDiff && total < 0;
         const totalDisplay = isDiff ? (total === 0 ? '0.00' : formatMoney(Math.abs(total))) : formatMoney(total);
         const totalSign = isDiff && total < 0 ? '-' : '';
+        const totalTextColor = totalNeg ? '#fecaca' : '#ffffff';
         return `
         <tr style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:${bandColor};">
-            <td class="p-2 border ${borderColor} font-bold text-white whitespace-nowrap" style="background:${bandColor};">${label}</td>
+            <td class="p-2 border ${borderColor} font-bold whitespace-nowrap" style="background:${bandColor};color:#ffffff;">${label}</td>
             ${cells}
-            <td class="p-2 border ${borderColor} text-right font-black whitespace-nowrap" style="background:${bandColor};color:#fff;${totalNeg ? 'color:#fecaca;' : ''}">${totalSign}${totalDisplay}</td>
+            <td class="p-2 border ${borderColor} text-right font-black whitespace-nowrap" style="background:${bandColor};color:${totalTextColor};">${totalSign}${totalDisplay}</td>
         </tr>`;
     };
 
@@ -2186,6 +2188,75 @@ function renderVarianceSummary() {
         rowHtml('รวมยอดรับ 90%', cmpMonthTotals, cmpGrandTotal, '#4c1d95', 'border-violet-800', false) +
         rowHtml('รวมยอดคืน 90%', retMonthTotals, retGrandTotal, '#164e63', 'border-cyan-800', false) +
         rowHtml('ส่วนต่าง (รับ − คืน)', diffMonths, diffTotal, '#b45309', 'border-amber-800', true);
+
+    updateVarTrendChart();
+}
+
+let varTrendChartInst = null;
+function updateVarTrendChart() {
+    const canvas = document.getElementById('varTrendChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    if (varTrendChartInst) {
+        varTrendChartInst.data.datasets[0].data = cmpMonthTotals;
+        varTrendChartInst.data.datasets[1].data = retMonthTotals;
+        varTrendChartInst.update();
+        return;
+    }
+
+    varTrendChartInst = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: CMP_MONTHS_SHORT,
+            datasets: [
+                {
+                    label: 'ยอดรับ 90%',
+                    data: cmpMonthTotals,
+                    borderColor: '#7c3aed',
+                    backgroundColor: '#7c3aed',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#7c3aed',
+                    tension: 0.25
+                },
+                {
+                    label: 'ยอดคืน 90%',
+                    data: retMonthTotals,
+                    borderColor: '#0891b2',
+                    backgroundColor: '#0891b2',
+                    borderDash: [6, 4],
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointStyle: 'rectRot',
+                    pointBackgroundColor: '#0891b2',
+                    tension: 0.25
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => ctx.dataset.label + ': ' + formatMoney(ctx.parsed.y)
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { callback: (v) => (v / 1000) + 'k' },
+                    grid: { color: '#e5e7eb' }
+                },
+                x: {
+                    ticks: { autoSkip: false },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
 }
 
 // =====================================================================
