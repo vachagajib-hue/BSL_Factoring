@@ -234,15 +234,15 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse border border-slate-300 table-fixed">
                     <colgroup>
-                        <col style="width: 10%;"> <!-- วันที่ครบกำหนด -->
-                        <col style="width: 13%;"> <!-- เลข TD -->
+                        <col style="width: 11%;"> <!-- วันที่ครบกำหนด -->
+                        <col style="width: 9%;">  <!-- เลข TD -->
                         <col style="width: 11%;"> <!-- เลขที่ IV -->
-                        <col style="width: 14%;"> <!-- รายละเอียด -->
-                        <col style="width: 8%;">  <!-- ประจำเดือน -->
-                        <col style="width: 14%;"> <!-- ลูกหนี้ -->
-                        <col style="width: 7%;">  <!-- สถานะ -->
-                        <col style="width: 10%;"> <!-- หมายเหตุ -->
-                        <col style="width: 13%;"> <!-- จำนวนเงิน -->
+                        <col style="width: 12%;"> <!-- รายละเอียด -->
+                        <col style="width: 7%;">  <!-- ประจำเดือน -->
+                        <col style="width: 13%;"> <!-- ลูกหนี้ -->
+                        <col style="width: 9%;">  <!-- สถานะ -->
+                        <col style="width: 13%;"> <!-- หมายเหตุ -->
+                        <col style="width: 15%;"> <!-- จำนวนเงิน -->
                     </colgroup>
                     <thead>
                         <!-- แถวสำหรับเว้นระยะขอบบนในหน้า 2 เป็นต้นไป (Visible only in Print) -->
@@ -320,16 +320,6 @@
                         </svg>
                         <span id="adv-table-toggle-lbl">ซ่อนรายละเอียด</span>
                     </button>
-                    <!-- ปุ่ม Export PDF เฉพาะตาราง Advance -->
-                    <button data-html2canvas-ignore="true" onclick="exportAdvanceToPDF()"
-                        class="bg-rose-50 text-rose-600 hover:bg-rose-100 px-3 py-1 rounded-md flex items-center gap-1.5 transition-all font-bold text-[10px] uppercase tracking-wider border border-rose-100">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                            </path>
-                        </svg>
-                        Export PDF
-                    </button>
                 </div>
                 <div class="flex gap-2 items-center" data-html2canvas-ignore="true" id="advance-filters-container">
 
@@ -390,15 +380,14 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse border border-slate-300 table-fixed">
                     <colgroup>
-                        <col style="width: 10%;"> <!-- วันที่ครบกำหนด -->
-                        <col style="width: 12%;"> <!-- เลข TD -->
+                        <col style="width: 11%;"> <!-- วันที่ครบกำหนด -->
+                        <col style="width: 9%;">  <!-- เลข TD -->
                         <col style="width: 11%;"> <!-- เลขที่ IV -->
                         <col style="width: 14%;"> <!-- รายละเอียด -->
                         <col style="width: 8%;">  <!-- ประจำเดือน -->
-                        <col style="width: 14%;"> <!-- ลูกหนี้ -->
-                        <col style="width: 7%;">  <!-- สถานะ -->
-                        <col style="width: 10%;"> <!-- เลขที่เช็ค -->
-                        <col style="width: 14%;"> <!-- จำนวนเงิน Advance 90% -->
+                        <col style="width: 15%;"> <!-- ลูกหนี้ -->
+                        <col style="width: 10%;"> <!-- สถานะ -->
+                        <col style="width: 22%;"> <!-- จำนวนเงิน Advance 90% -->
                     </colgroup>
                     <thead>
                         <tr class="bg-emerald-600 border-b border-emerald-700 text-white font-bold text-base tracking-wide text-center"
@@ -410,7 +399,6 @@
                             <th class="p-3 border-r border-emerald-500 whitespace-nowrap">ประจำเดือน</th>
                             <th class="p-4 border-r border-emerald-500 whitespace-nowrap">ลูกหนี้</th>
                             <th class="p-4 border-r border-emerald-500 whitespace-nowrap">สถานะ</th>
-                            <th class="p-4 border-r border-emerald-500 whitespace-nowrap">เลขที่เช็ค</th>
                             <th class="p-4 whitespace-nowrap">ยอด Advance 90%</th>
                         </tr>
                     </thead>
@@ -429,6 +417,39 @@
                         <span class="text-2xl font-black text-emerald-600" id="advance-total-amount">0.00</span>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- เปรียบเทียบยอดรับ 90% ตามบริษัท (รายเดือน) -->
+        <div class="bg-white p-8 rounded-xl shadow-sm border border-slate-100 mb-12" id="cmp-table-area">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div class="flex items-center gap-3">
+                    <h3 class="text-lg font-bold text-slate-800 uppercase tracking-wide">เปรียบเทียบยอดรับ 90% ตามบริษัท</h3>
+                    <span class="text-xs font-medium text-slate-400">รวมยอด Advance 90% แยกตามบริษัท เดือน ม.ค. - ธ.ค.</span>
+                </div>
+                <div class="flex gap-2 items-center" data-html2canvas-ignore="true">
+                    <label for="cmp-year-select" class="text-xs font-bold text-slate-500 uppercase tracking-wider">ปี:</label>
+                    <select id="cmp-year-select"
+                        class="px-3 py-2 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-all focus:outline-none">
+                    </select>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="border-collapse border border-slate-300 text-xs shadow-sm w-full" id="cmp-table">
+                    <thead id="cmp-table-thead">
+                        <tr class="bg-violet-600 text-white font-bold" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                            <th class="p-3 border border-violet-500 text-left whitespace-nowrap" style="min-width:220px;">บริษัท</th>
+                            <!-- Injected: 12 month headers -->
+                        </tr>
+                    </thead>
+                    <tbody id="cmp-table-body" class="text-slate-700">
+                        <!-- Injected by JS -->
+                    </tbody>
+                    <tfoot id="cmp-table-foot">
+                        <!-- Injected by JS -->
+                    </tfoot>
+                </table>
             </div>
         </div>
 
@@ -463,7 +484,7 @@
     </div>
 
     <!-- Custom Script -->
-    <script src="script.js?v=3.0"></script>
+    <script src="script.js?v=3.1"></script>
 </body>
 
 </html>
