@@ -53,6 +53,15 @@
                     </div>
                 </div>
 
+                <!-- ปุ่มย่อ/ขยายกล่องรายงานครบกำหนดชำระ + ยอด Advance 90% -->
+                <button id="btnToggleDetailTables" data-html2canvas-ignore="true"
+                    class="bg-slate-700 text-white hover:bg-slate-800 px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm transition-all font-bold text-sm">
+                    <svg id="btnToggleDetailTablesIcon" class="w-5 h-5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                    <span id="btnToggleDetailTablesLbl">ย่อตารางรายละเอียด</span>
+                </button>
+
                 <!-- ปุ่ม Daily PDF Report -->
                 <button id="btnDailyPDF" data-html2canvas-ignore="true"
                     class="bg-rose-500 text-white hover:bg-rose-600 px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm transition-all font-bold text-sm">
@@ -231,7 +240,7 @@
                 </div>
             </div>
 
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto" id="main-table-wrapper">
                 <table class="w-full text-left border-collapse border border-slate-300 table-fixed">
                     <colgroup>
                         <col style="width: 11%;"> <!-- วันที่ครบกำหนด -->
@@ -377,7 +386,7 @@
                 </div>
             </div>
 
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto" id="advance-table-wrapper">
                 <table class="w-full text-left border-collapse border border-slate-300 table-fixed">
                     <colgroup>
                         <col style="width: 11%;"> <!-- วันที่ครบกำหนด -->
@@ -408,7 +417,7 @@
                 </table>
             </div>
 
-            <div class="border-t border-slate-100 pt-6 mt-6">
+            <div class="border-t border-slate-100 pt-6 mt-6" id="advance-footer-section">
                 <!-- Pivot Summary -->
                 <div id="advance-summary-container" class="mb-6 w-full overflow-x-auto"></div>
                 <div class="flex justify-end">
@@ -449,6 +458,60 @@
                     <tfoot id="cmp-table-foot">
                         <!-- Injected by JS -->
                     </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- เปรียบเทียบยอดคืน 90% ตามบริษัท (รายเดือน ตามเดือนที่กำหนดชำระ) -->
+        <div class="bg-white p-8 rounded-xl shadow-sm border border-slate-100 mb-12" id="ret-table-area">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div class="flex items-center gap-3">
+                    <h3 class="text-lg font-bold text-slate-800 uppercase tracking-wide">เปรียบเทียบยอดคืน 90% ตามบริษัท</h3>
+                    <span class="text-xs font-medium text-slate-400">รวมยอด Advance 90% แยกตามบริษัท ตามเดือนที่กำหนดชำระ (คืนเงิน) ม.ค. - ธ.ค.</span>
+                </div>
+                <div class="flex gap-2 items-center" data-html2canvas-ignore="true">
+                    <label for="ret-year-select" class="text-xs font-bold text-slate-500 uppercase tracking-wider">ปี:</label>
+                    <select id="ret-year-select"
+                        class="px-3 py-2 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-all focus:outline-none">
+                    </select>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="border-collapse border border-slate-300 text-xs shadow-sm w-full" id="ret-table">
+                    <thead id="ret-table-thead">
+                        <tr class="bg-cyan-600 text-white font-bold" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                            <th class="p-3 border border-cyan-500 text-left whitespace-nowrap" style="min-width:220px;">บริษัท</th>
+                            <!-- Injected: 12 month headers -->
+                        </tr>
+                    </thead>
+                    <tbody id="ret-table-body" class="text-slate-700">
+                        <!-- Injected by JS -->
+                    </tbody>
+                    <tfoot id="ret-table-foot">
+                        <!-- Injected by JS -->
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- สรุปส่วนต่าง ยอดรับ 90% vs ยอดคืน 90% -->
+        <div class="bg-white p-8 rounded-xl shadow-sm border border-slate-100 mb-12" id="var-summary-area">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div class="flex items-center gap-3">
+                    <h3 class="text-lg font-bold text-slate-800 uppercase tracking-wide">สรุปส่วนต่าง ยอดรับ 90% vs ยอดคืน 90%</h3>
+                    <span class="text-xs font-medium text-slate-400" id="var-summary-note"></span>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="border-collapse border border-slate-300 text-xs shadow-sm w-full" id="var-summary-table">
+                    <thead id="var-summary-thead">
+                        <!-- Injected by JS -->
+                    </thead>
+                    <tbody id="var-summary-body" class="text-slate-700">
+                        <!-- Injected by JS -->
+                    </tbody>
                 </table>
             </div>
         </div>
