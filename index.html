@@ -238,6 +238,38 @@
                     </div>
 
                 </div>
+                    <!-- Due Date Calendar Filter -->
+                    <div class="relative inline-block text-left" id="duedate-filter-wrapper">
+                        <button id="duedate-filter-btn"
+                            class="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-all focus:outline-none">
+                            <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <span id="duedate-filter-label">วันที่ครบกำหนด</span>
+                            <svg id="duedate-filter-arrow" class="w-3 h-3 text-slate-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="duedate-filter-dropdown"
+                            class="hidden duecal-dropdown absolute right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 p-3 scale-95 opacity-0 transition-all duration-150 origin-top-right">
+                            <div class="duecal-topbar">
+                                <button class="duecal-nav" id="duedate-cal-prev" type="button">&lsaquo;</button>
+                                <select class="duecal-sel" id="duedate-cal-month-sel"></select>
+                                <select class="duecal-sel" id="duedate-cal-year-sel"></select>
+                                <button class="duecal-nav" id="duedate-cal-next" type="button">&rsaquo;</button>
+                            </div>
+                            <div class="duecal-actions">
+                                <button class="duecal-btn sel" id="duedate-cal-selall" type="button">เลือกทั้งหมด</button>
+                                <button class="duecal-btn clr" id="duedate-cal-clear" type="button">ล้าง</button>
+                            </div>
+                            <div class="duecal-weekdays">
+                                <span>อา</span><span>จ</span><span>อ</span><span>พ</span><span>พฤ</span><span>ศ</span><span>ส</span>
+                            </div>
+                            <div class="duecal-grid" id="duedate-cal-grid"></div>
+                            <div class="duecal-summary" id="duedate-cal-summary">ยังไม่ได้เลือกวันที่</div>
+                        </div>
+                    </div>
+
             </div>
 
             <div class="overflow-x-auto" id="main-table-wrapper">
@@ -384,6 +416,38 @@
                     </div>
 
                 </div>
+                    <!-- Due Date Calendar Filter -->
+                    <div class="relative inline-block text-left" id="adv-duedate-filter-wrapper">
+                        <button id="adv-duedate-filter-btn"
+                            class="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-all focus:outline-none">
+                            <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <span id="adv-duedate-filter-label">วันที่ครบกำหนด</span>
+                            <svg id="adv-duedate-filter-arrow" class="w-3 h-3 text-slate-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="adv-duedate-filter-dropdown"
+                            class="hidden duecal-dropdown absolute right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 p-3 scale-95 opacity-0 transition-all duration-150 origin-top-right">
+                            <div class="duecal-topbar">
+                                <button class="duecal-nav" id="adv-duedate-cal-prev" type="button">&lsaquo;</button>
+                                <select class="duecal-sel" id="adv-duedate-cal-month-sel"></select>
+                                <select class="duecal-sel" id="adv-duedate-cal-year-sel"></select>
+                                <button class="duecal-nav" id="adv-duedate-cal-next" type="button">&rsaquo;</button>
+                            </div>
+                            <div class="duecal-actions">
+                                <button class="duecal-btn sel" id="adv-duedate-cal-selall" type="button">เลือกทั้งหมด</button>
+                                <button class="duecal-btn clr" id="adv-duedate-cal-clear" type="button">ล้าง</button>
+                            </div>
+                            <div class="duecal-weekdays">
+                                <span>อา</span><span>จ</span><span>อ</span><span>พ</span><span>พฤ</span><span>ศ</span><span>ส</span>
+                            </div>
+                            <div class="duecal-grid" id="adv-duedate-cal-grid"></div>
+                            <div class="duecal-summary" id="adv-duedate-cal-summary">ยังไม่ได้เลือกวันที่</div>
+                        </div>
+                    </div>
+
             </div>
 
             <div class="overflow-x-auto" id="advance-table-wrapper">
