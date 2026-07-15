@@ -2445,13 +2445,12 @@ function renderChequeTable() {
         .map(k => groups[k])
         .filter(g => chequeSelectedStatuses.size === 0 || chequeSelectedStatuses.has(g.status));
 
-    // เรียงตามวันที่หน้าเช็ค
+    // เรียงตามเลขที่เช็ค จากน้อยไปหามาก
     rows.sort((a, b) => {
-        const pa = parseDateParts(a.faceDate);
-        const pb = parseDateParts(b.faceDate);
-        const va = (pa.y && pa.m && pa.d) ? parseInt(pa.y + pa.m + pa.d, 10) : 0;
-        const vb = (pb.y && pb.m && pb.d) ? parseInt(pb.y + pb.m + pb.d, 10) : 0;
-        return va - vb;
+        const na = parseInt(a.chequeNo.replace(/[^0-9]/g, ''), 10);
+        const nb = parseInt(b.chequeNo.replace(/[^0-9]/g, ''), 10);
+        if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb;
+        return a.chequeNo.localeCompare(b.chequeNo, undefined, { numeric: true });
     });
 
     if (rows.length === 0) {
