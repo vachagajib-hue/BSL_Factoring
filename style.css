@@ -151,3 +151,49 @@ body {
 }
 .bsl-btn-generate-pdf:hover { opacity: 0.92; transform: translateY(-1px); }
 .bsl-btn-generate-pdf:active { transform: translateY(0); }
+
+/* ===== Compact due-date calendar filter (dropdown) ===== */
+.duecal-dropdown { width: 258px; }
+.duecal-topbar { display: flex; gap: 4px; align-items: center; margin-bottom: 8px; }
+.duecal-nav {
+    width: 22px; height: 22px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff;
+    cursor: pointer; font-size: 13px; font-weight: 700; color: #475569;
+    display: flex; align-items: center; justify-content: center; line-height: 1; padding: 0;
+}
+.duecal-nav:hover { background: #f8fafc; }
+.duecal-sel {
+    border: 1px solid #e2e8f0; background: #fff; padding: 3px 5px; border-radius: 6px;
+    font-size: 11px; font-family: inherit; cursor: pointer; flex: 1; min-width: 0; color: #334155;
+}
+.duecal-actions { display: flex; gap: 4px; margin-bottom: 8px; }
+.duecal-btn {
+    border: 1px solid #e2e8f0; background: #fff; padding: 3px 7px; border-radius: 6px;
+    font-size: 10px; font-family: inherit; cursor: pointer; font-weight: 700;
+}
+.duecal-btn.sel { color: #4338ca; }
+.duecal-btn.sel:hover { background: #eef2ff; border-color: #c7d2fe; }
+.duecal-btn.clr { color: #b91c1c; }
+.duecal-btn.clr:hover { background: #fee2e2; border-color: #fecaca; }
+.duecal-weekdays {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 4px;
+    text-align: center; font-size: 9px; font-weight: 700; color: #64748b;
+}
+.duecal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 8px; }
+.duecal-day {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    border: 1px solid #e2e8f0; border-radius: 5px; cursor: pointer;
+    font-size: 10px; font-weight: 600; color: #334155; background: #fff;
+    position: relative; user-select: none;
+}
+.duecal-day:hover { background: #f8fafc; }
+.duecal-day.empty { border: none; background: transparent; cursor: default; }
+.duecal-day.has-data::after {
+    content: ''; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%);
+    width: 3px; height: 3px; border-radius: 50%; background: #4f46e5;
+}
+.duecal-day.selected { background: #4f46e5; color: #fff; border-color: #4338ca; }
+.duecal-day.selected.has-data::after { background: #fff; }
+.duecal-summary {
+    background: #f8fafc; border: 1px solid #e2e8f0; padding: 5px 8px; border-radius: 6px;
+    font-size: 10px; color: #475569; font-weight: 700; text-align: center;
+}
