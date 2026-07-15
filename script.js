@@ -46,7 +46,12 @@ let DATA1_COL = {
     remain: 16,   // Q - ยอดคงเหลือรับ 10%
     status: 17,   // R - สถานะ
     note: 19,     // T - หมายเหตุ
-    payMonth: 21  // V - เดือนที่กำหนดชำระ
+    payMonth: 21, // V - เดือนที่กำหนดชำระ
+    chequeNo: 22,       // W - เลขที่เช็ค
+    chequeFaceDate: 23, // X - วันที่หน้าเช็ค
+    chequeFee: 26,      // AA - ค่าธรรมเนียมเช็ค
+    chequeDeferDate: 27,// AB - วันที่เลื่อนเช็ค
+    chequeStatus: 28    // AC - สถานะเช็ค
 };
 
 // --- Top Loading Bar ---
@@ -274,6 +279,7 @@ function processRealData(summary, details) {
         applyAdvanceFilter();
         populateCmpYearFilter(details.data);
         populateRetYearFilter(details.data);
+        populateChequeFilters(details.data);
     }
 }
 
@@ -2292,4 +2298,184 @@ function toggleDetailTables() {
     const icon = document.getElementById('btnToggleDetailTablesIcon');
     if (lbl) lbl.textContent = detailTablesCollapsed ? 'ขยายตารางรายละเอียด' : 'ย่อตารางรายละเอียด';
     if (icon) icon.style.transform = detailTablesCollapsed ? 'rotate(-90deg)' : '';
+}
+
+// =====================================================================
+// ข้อมูลเช็คไม่ผ่าน — รวมตามเลขที่เช็ค (คอลัมน์ W)
+// =====================================================================
+let chequeSelectedStatuses = new Set();
+let chequeUniqueStatusList = [];
+
+function isValidDebtorRow(row) {
+    const name = (row[DATA1_COL.debtor] || "").toString().trim();
+    return !!(name && name !== "ลูกหนี้" && name !== "ชื่อลูกหนี้" && name !== "Debtor");
+}
+
+function populateChequeFilters(data) {
+    const statusSet = new Set();
+    data.forEach(row => {
+        if (!isValidDebtorRow(row)) return;
+        const chequeNo = (row[DATA1_COL.chequeNo] || "").toString().trim();
+        if (!chequeNo) return;
+        const st = (row[DATA1_COL.chequeStatus] || "").toString().trim();
+        statusSet.add(st === "" ? "(ไม่ระบุสถานะ)" : st);
+    });
+
+    const dropdown = document.getElementById('cheque-status-filter-dropdown');
+    if (!dropdown) return;
+    dropdown.innerHTML = '';
+
+    const sortedStatuses = Array.from(statusSet).sort();
+    chequeUniqueStatusList = sortedStatuses;
+
+    // ค่าเริ่มต้น: เลือกเฉพาะ "เช็คไม่ผ่าน" ถ้ามี ไม่งั้นเลือกทั้งหมด
+    if (sortedStatuses.includes('เช็คไม่ผ่าน')) {
+        chequeSelectedStatuses = new Set(['เช็คไม่ผ่าน']);
+    } else {
+        chequeSelectedStatuses = new Set(sortedStatuses);
+    }
+
+    sortedStatuses.forEach((s, idx) => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center gap-2 hover:bg-slate-50 p-1 rounded transition-colors';
+        const checked = chequeSelectedStatuses.has(s) ? 'checked' : '';
+        div.innerHTML = `
+            <input type="checkbox" id="cheque-status-chk-${idx}" value="${s}" class="cheque-status-chk-item w-3.5 h-3.5 text-rose-600 border-slate-300 rounded focus:ring-rose-500 cursor-pointer" ${checked}>
+            <label for="cheque-status-chk-${idx}" class="text-xs select-none cursor-pointer text-slate-600">${s}</label>
+        `;
+        dropdown.appendChild(div);
+    });
+
+    const items = dropdown.querySelectorAll('.cheque-status-chk-item');
+    items.forEach(chk => {
+        chk.addEventListener('change', () => {
+            chk.checked ? chequeSelectedStatuses.add(chk.value) : chequeSelectedStatuses.delete(chk.value);
+            updateChequeStatusFilterUI();
+            renderChequeTable();
+        });
+    });
+
+    updateChequeStatusFilterUI();
+
+    const btn = document.getElementById('cheque-status-filter-btn');
+    const arrow = document.getElementById('cheque-status-filter-arrow');
+    if (btn && dropdown && !btn._bslBound) {
+        btn._bslBound = true;
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isHidden = dropdown.classList.contains('hidden');
+            if (isHidden) {
+                dropdown.classList.remove('hidden');
+                setTimeout(() => {
+                    dropdown.classList.remove('scale-95', 'opacity-0');
+                    dropdown.classList.add('scale-100', 'opacity-100');
+                }, 10);
+                if (arrow) arrow.classList.add('rotate-180');
+            } else {
+                dropdown.classList.remove('scale-100', 'opacity-100');
+                dropdown.classList.add('scale-95', 'opacity-0');
+                if (arrow) arrow.classList.remove('rotate-180');
+                setTimeout(() => dropdown.classList.add('hidden'), 150);
+            }
+        });
+        dropdown.addEventListener('click', e => e.stopPropagation());
+    }
+
+    renderChequeTable();
+}
+
+function updateChequeStatusFilterUI() {
+    const label = document.getElementById('cheque-status-filter-label');
+    if (!label) return;
+    const total = chequeUniqueStatusList.length;
+    if (chequeSelectedStatuses.size === 0) label.textContent = 'สถานะเช็ค (ไม่มีการเลือก)';
+    else if (chequeSelectedStatuses.size === total) label.textContent = 'สถานะเช็ค (ทั้งหมด)';
+    else label.textContent = Array.from(chequeSelectedStatuses).join(', ');
+}
+
+function renderChequeTable() {
+    const tbody = document.getElementById('cheque-table-body');
+    const tfoot = document.getElementById('cheque-table-foot');
+    if (!tbody || !tfoot) return;
+
+    // จัดกลุ่มตามเลขที่เช็ค (คอลัมน์ W): รวมยอดเงิน (P) และค่าธรรมเนียม (AA)
+    const groups = {};
+    const groupOrder = [];
+
+    RAW_DATA1.forEach(row => {
+        if (!isValidDebtorRow(row)) return;
+        const chequeNo = (row[DATA1_COL.chequeNo] || "").toString().trim();
+        if (!chequeNo) return;
+
+        const statusRaw = (row[DATA1_COL.chequeStatus] || "").toString().trim();
+        const statusKey = statusRaw === "" ? "(ไม่ระบุสถานะ)" : statusRaw;
+
+        if (!groups[chequeNo]) {
+            groups[chequeNo] = {
+                chequeNo,
+                company: (row[DATA1_COL.debtor] || "").toString().trim(),
+                faceDate: (row[DATA1_COL.chequeFaceDate] || "").toString().trim(),
+                deferDate: (row[DATA1_COL.chequeDeferDate] || "").toString().trim(),
+                status: statusKey,
+                amount: 0,
+                fee: 0
+            };
+            groupOrder.push(chequeNo);
+        }
+        const g = groups[chequeNo];
+        g.amount += parseNumber(row[DATA1_COL.used]);      // P
+        g.fee += parseNumber(row[DATA1_COL.chequeFee]);    // AA
+        if (!g.faceDate) g.faceDate = (row[DATA1_COL.chequeFaceDate] || "").toString().trim();
+        if (!g.deferDate) g.deferDate = (row[DATA1_COL.chequeDeferDate] || "").toString().trim();
+    });
+
+    let rows = groupOrder
+        .map(k => groups[k])
+        .filter(g => chequeSelectedStatuses.size === 0 || chequeSelectedStatuses.has(g.status));
+
+    // เรียงตามวันที่หน้าเช็ค
+    rows.sort((a, b) => {
+        const pa = parseDateParts(a.faceDate);
+        const pb = parseDateParts(b.faceDate);
+        const va = (pa.y && pa.m && pa.d) ? parseInt(pa.y + pa.m + pa.d, 10) : 0;
+        const vb = (pb.y && pb.m && pb.d) ? parseInt(pb.y + pb.m + pb.d, 10) : 0;
+        return va - vb;
+    });
+
+    if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 italic">ไม่พบเช็คที่ตรงกับสถานะที่เลือก</td></tr>`;
+        tfoot.innerHTML = '';
+        return;
+    }
+
+    const fmtDate = (val) => {
+        if (!val) return '-';
+        const p = parseDateParts(val);
+        if (p.d && p.m && p.y) return `${p.d}/${p.m}/${p.y}`;
+        return val;
+    };
+
+    let totalAmount = 0, totalFee = 0;
+    tbody.innerHTML = rows.map(g => {
+        totalAmount += g.amount;
+        totalFee += g.fee;
+        return `
+        <tr class="border-b border-slate-300 hover:bg-slate-50 transition-colors text-center">
+            <td class="p-3 border-r border-slate-300 font-bold text-slate-700 whitespace-normal text-left">${g.company}</td>
+            <td class="p-3 border-r border-slate-300 font-bold text-violet-700 whitespace-nowrap">${g.chequeNo}</td>
+            <td class="p-3 border-r border-slate-300 text-slate-500 whitespace-nowrap">${fmtDate(g.faceDate)}</td>
+            <td class="p-3 border-r border-slate-300 text-slate-500 whitespace-nowrap">${fmtDate(g.deferDate)}</td>
+            <td class="p-3 border-r border-slate-300 text-right font-black text-slate-800 whitespace-nowrap">${formatMoney(g.amount)}</td>
+            <td class="p-3 border-r border-slate-300 text-right font-medium text-slate-600 whitespace-nowrap">${formatMoney(g.fee)}</td>
+            <td class="p-3 whitespace-nowrap"><span class="inline-block px-2 py-1 rounded font-bold text-rose-800" style="background:#fee2e2;">${g.status}</span></td>
+        </tr>`;
+    }).join('');
+
+    tfoot.innerHTML = `
+        <tr style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#881337;">
+            <td colspan="4" class="p-3 font-black whitespace-nowrap" style="background:#881337;color:#fff;letter-spacing:0.05em;">รวมทั้งสิ้น (${rows.length} เช็ค)</td>
+            <td class="p-3 text-right font-black whitespace-nowrap" style="background:#881337;color:#fff;">${formatMoney(totalAmount)}</td>
+            <td class="p-3 text-right font-black whitespace-nowrap" style="background:#881337;color:#fff;">${formatMoney(totalFee)}</td>
+            <td style="background:#881337;"></td>
+        </tr>`;
 }
