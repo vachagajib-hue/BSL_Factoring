@@ -526,6 +526,55 @@
             </div>
         </div>
 
+        <!-- ข้อมูลเช็คไม่ผ่าน -->
+        <div class="bg-white p-8 rounded-xl shadow-sm border border-slate-100 mb-12" id="cheque-area">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div class="flex items-center gap-3">
+                    <h3 class="text-lg font-bold text-slate-800 uppercase tracking-wide">ข้อมูลเช็คไม่ผ่าน</h3>
+                    <span class="text-xs font-medium text-slate-400">รวมยอดเงินและค่าธรรมเนียมเช็คตามเลขที่เช็ค</span>
+                </div>
+                <div class="flex gap-2 items-center" data-html2canvas-ignore="true">
+                    <div class="relative inline-block text-left" id="cheque-status-filter-wrapper">
+                        <button id="cheque-status-filter-btn"
+                            class="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-all focus:outline-none">
+                            <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span id="cheque-status-filter-label">สถานะเช็ค</span>
+                            <svg id="cheque-status-filter-arrow" class="w-3 h-3 text-slate-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="cheque-status-filter-dropdown"
+                            class="hidden absolute right-0 mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-50 p-2 scale-95 opacity-0 transition-all duration-150 origin-top-right">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="border-collapse border border-slate-300 text-xs shadow-sm w-full" id="cheque-table">
+                    <thead>
+                        <tr class="bg-rose-600 text-white font-bold" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                            <th class="p-3 border border-rose-500 text-left whitespace-nowrap" style="min-width:200px;">บริษัท / ลูกหนี้</th>
+                            <th class="p-3 border border-rose-500 text-center whitespace-nowrap">เลขที่เช็ค</th>
+                            <th class="p-3 border border-rose-500 text-center whitespace-nowrap">วันที่หน้าเช็ค</th>
+                            <th class="p-3 border border-rose-500 text-center whitespace-nowrap">วันที่เลื่อนเช็ค</th>
+                            <th class="p-3 border border-rose-500 text-center whitespace-nowrap">ยอดเงิน (รวม)</th>
+                            <th class="p-3 border border-rose-500 text-center whitespace-nowrap">ค่าธรรมเนียมเช็ค (รวม)</th>
+                            <th class="p-3 border border-rose-500 text-center whitespace-nowrap">สถานะเช็ค</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cheque-table-body" class="text-slate-700">
+                        <!-- Injected by JS -->
+                    </tbody>
+                    <tfoot id="cheque-table-foot">
+                        <!-- Injected by JS -->
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
     </div>
 
     <!-- Daily PDF Report Modal -->
