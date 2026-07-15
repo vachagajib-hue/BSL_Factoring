@@ -20,6 +20,8 @@ let advSelectedYears = new Set();
 let advUniqueStatusList = [];
 let advUniqueMonthsList = [];
 let advUniqueYearsList = [];
+let mainDueDateFilter = new Set();
+let advDueDateFilter = new Set();
 
 const KPI_DATA = [
     { title: "ชื่อบริษัท", amount: "กำลังโหลด...", color: "text-indigo-600", bg: "bg-indigo-50" },
@@ -816,8 +818,10 @@ function applyTableFilter() {
         const statusVal2   = (row[DATA1_COL.status] || "").toString().trim();
         const statusKey    = statusVal2 === "" ? "(ไม่มีสถานะ)" : statusVal2;
         const matchesStatus = selectedStatuses.size === 0 || selectedStatuses.has(statusKey);
+        const dueDateKey   = (pTable.y && pTable.m && pTable.d) ? `${pTable.y}-${pTable.m}-${pTable.d}` : '';
+        const matchesDueDate = mainDueDateFilter.size === 0 || mainDueDateFilter.has(dueDateKey);
 
-        if (matchesMonth && matchesYear && matchesNote && matchesStatus) {
+        if (matchesMonth && matchesYear && matchesNote && matchesStatus && matchesDueDate) {
             const pDue = pTable;
             const amt = parseNumber(row[DATA1_COL.bill]);
             totalAmount += amt;
@@ -997,8 +1001,10 @@ function applyAdvanceFilter() {
         const matchesMonth  = advSelectedMonths.size === 0  || advSelectedMonths.has(p.m);
         const matchesYear   = advSelectedYears.size === 0   || advSelectedYears.has(p.y);
         const matchesStatus = advSelectedStatuses.size === 0 || advSelectedStatuses.has(statusKey);
+        const dueDateKey    = (p.y && p.m && p.d) ? `${p.y}-${p.m}-${p.d}` : '';
+        const matchesDueDate = advDueDateFilter.size === 0 || advDueDateFilter.has(dueDateKey);
 
-        if (matchesMonth && matchesYear && matchesStatus) {
+        if (matchesMonth && matchesYear && matchesStatus && matchesDueDate) {
             const amt = parseNumber(row[DATA1_COL.used]); // คอลัมน์ P
             totalAmount += amt;
             let shortDate = row[DATA1_COL.dueDate];
@@ -1813,6 +1819,8 @@ document.addEventListener('DOMContentLoaded', () => {
             { drop: 'adv-status-filter-dropdown',  arrow: 'adv-status-filter-arrow',  btn: 'adv-status-filter-btn'  },
             { drop: 'adv-month-filter-dropdown',   arrow: 'adv-month-filter-arrow',   btn: 'adv-month-filter-btn'   },
             { drop: 'adv-year-filter-dropdown',    arrow: 'adv-year-filter-arrow',    btn: 'adv-year-filter-btn'    },
+            { drop: 'duedate-filter-dropdown',      arrow: 'duedate-filter-arrow',      btn: 'duedate-filter-btn'      },
+            { drop: 'adv-duedate-filter-dropdown',  arrow: 'adv-duedate-filter-arrow',  btn: 'adv-duedate-filter-btn'  },
         ].forEach(({ drop, arrow, btn }) => {
             const el = document.getElementById(drop);
             const ar = document.getElementById(arrow);
@@ -1837,6 +1845,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // ปุ่มย่อ/ขยายกล่องรายงานครบกำหนดชำระ + ยอด Advance 90% พร้อมกัน
     const btnToggleDetail = document.getElementById('btnToggleDetailTables');
     if (btnToggleDetail) btnToggleDetail.addEventListener('click', toggleDetailTables);
+
+    // ปฏิทินเลือกวันที่ครบกำหนด (ตารางรายงานครบกำหนดชำระ + ยอด Advance 90%)
+    createDueDateCalendarFilter('duedate', mainDueDateFilter, applyTableFilter);
+    createDueDateCalendarFilter('adv-duedate', advDueDateFilter, applyAdvanceFilter);
 
     const overlay = document.getElementById('pdfModal');
     if (overlay) overlay.addEventListener('click', (e) => {
@@ -2478,4 +2490,144 @@ function renderChequeTable() {
             <td class="p-3 text-right font-black whitespace-nowrap" style="background:#881337;color:#fff;">${formatMoney(totalFee)}</td>
             <td style="background:#881337;"></td>
         </tr>`;
+}
+
+// =====================================================================
+// ปฏิทินเลือกวันที่ครบกำหนด (แบบกะทัดรัด) — ใช้ร่วมกับตัวกรองเดือน/ปี/สถานะเดิม (AND)
+// นำไปใช้กับทั้งตาราง "รายงานครบกำหนดชำระ" (prefix: duedate) และ "ยอด Advance 90%" (prefix: adv-duedate)
+// =====================================================================
+function createDueDateCalendarFilter(prefix, selectedSet, onChange) {
+    let calYear = new Date().getFullYear();
+    let calMonth = new Date().getMonth();
+    let selectsBuilt = false;
+
+    const $ = (suffix) => document.getElementById(prefix + suffix);
+    const toDateKey = (y, m, d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+    function populateSelects() {
+        if (selectsBuilt) return;
+        const months = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+                        'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+        const mSel = $('-cal-month-sel');
+        const ySel = $('-cal-year-sel');
+        if (!mSel || !ySel) return;
+
+        mSel.innerHTML = months.map((m, i) => `<option value="${i}">${m}</option>`).join('');
+        const currentYear = new Date().getFullYear();
+        const years = [];
+        for (let y = currentYear - 5; y <= currentYear + 10; y++) years.push(y);
+        ySel.innerHTML = years.map(y => `<option value="${y}">${y + 543}</option>`).join('');
+
+        mSel.addEventListener('change', () => { calMonth = parseInt(mSel.value, 10); renderGrid(); });
+        ySel.addEventListener('change', () => { calYear = parseInt(ySel.value, 10); renderGrid(); });
+        selectsBuilt = true;
+    }
+
+    function updateSummary() {
+        const s = $('-cal-summary');
+        const lbl = $('-filter-label');
+        if (selectedSet.size === 0) {
+            if (s) s.textContent = 'ยังไม่ได้เลือกวันที่';
+            if (lbl) lbl.textContent = 'วันที่ครบกำหนด';
+        } else {
+            const dayLabels = Array.from(selectedSet).sort().map(k => k.split('-')[2]).join(', ');
+            if (s) s.textContent = `เลือกแล้ว ${selectedSet.size} วัน: ${dayLabels}`;
+            if (lbl) lbl.textContent = `วันที่ครบกำหนด (${selectedSet.size})`;
+        }
+    }
+
+    function renderGrid() {
+        populateSelects();
+        const mSel = $('-cal-month-sel');
+        const ySel = $('-cal-year-sel');
+        if (mSel) mSel.value = calMonth;
+        if (ySel) ySel.value = calYear;
+
+        const grid = $('-cal-grid');
+        if (!grid) return;
+
+        const datesWithData = bslGetDatesWithData();
+        const firstDay = new Date(calYear, calMonth, 1).getDay();
+        const lastDate = new Date(calYear, calMonth + 1, 0).getDate();
+
+        let html = '';
+        for (let i = 0; i < firstDay; i++) html += '<div class="duecal-day empty"></div>';
+        for (let d = 1; d <= lastDate; d++) {
+            const key = toDateKey(calYear, calMonth, d);
+            const cls = ['duecal-day'];
+            if (datesWithData.has(key)) cls.push('has-data');
+            if (selectedSet.has(key)) cls.push('selected');
+            html += `<div class="${cls.join(' ')}" data-key="${key}">${d}</div>`;
+        }
+        grid.innerHTML = html;
+
+        grid.querySelectorAll('.duecal-day:not(.empty)').forEach(el => {
+            el.addEventListener('click', () => {
+                const k = el.dataset.key;
+                if (selectedSet.has(k)) { selectedSet.delete(k); el.classList.remove('selected'); }
+                else { selectedSet.add(k); el.classList.add('selected'); }
+                updateSummary();
+                onChange();
+            });
+        });
+
+        updateSummary();
+    }
+
+    const prevBtn = $('-cal-prev');
+    if (prevBtn) prevBtn.addEventListener('click', () => {
+        calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; }
+        renderGrid();
+    });
+
+    const nextBtn = $('-cal-next');
+    if (nextBtn) nextBtn.addEventListener('click', () => {
+        calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; }
+        renderGrid();
+    });
+
+    const selAllBtn = $('-cal-selall');
+    if (selAllBtn) selAllBtn.addEventListener('click', () => {
+        const datesWithData = bslGetDatesWithData();
+        datesWithData.forEach(k => {
+            const [y, m] = k.split('-').map(Number);
+            if (y === calYear && (m - 1) === calMonth) selectedSet.add(k);
+        });
+        renderGrid();
+        onChange();
+    });
+
+    const clearBtn = $('-cal-clear');
+    if (clearBtn) clearBtn.addEventListener('click', () => {
+        selectedSet.clear();
+        renderGrid();
+        onChange();
+    });
+
+    const btn = $('-filter-btn');
+    const dropdown = $('-filter-dropdown');
+    const arrow = $('-filter-arrow');
+    if (btn && dropdown) {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isHidden = dropdown.classList.contains('hidden');
+            if (isHidden) {
+                dropdown.classList.remove('hidden');
+                setTimeout(() => {
+                    dropdown.classList.remove('scale-95', 'opacity-0');
+                    dropdown.classList.add('scale-100', 'opacity-100');
+                }, 10);
+                if (arrow) arrow.classList.add('rotate-180');
+                renderGrid();
+            } else {
+                dropdown.classList.remove('scale-100', 'opacity-100');
+                dropdown.classList.add('scale-95', 'opacity-0');
+                if (arrow) arrow.classList.remove('rotate-180');
+                setTimeout(() => dropdown.classList.add('hidden'), 150);
+            }
+        });
+        dropdown.addEventListener('click', e => e.stopPropagation());
+    }
+
+    updateSummary();
 }
