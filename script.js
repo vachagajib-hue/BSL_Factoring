@@ -1108,7 +1108,7 @@ function renderAdvanceTable(data) {
         });
 
         const dateThs = sortedDates.map(d =>
-            `<th class="p-2 border border-indigo-500 text-center whitespace-nowrap" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">${d}</th>`
+            `<th class="p-2 border border-indigo-500 text-center whitespace-nowrap sticky top-0 z-20" style="background:#4f46e5;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${d}</th>`
         ).join('');
 
         let debtorRows = '';
@@ -1173,9 +1173,9 @@ function renderAdvanceTable(data) {
             <table class="border-collapse border border-slate-300 text-xs shadow-sm" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
                 <thead>
                     <tr class="bg-indigo-600 text-white font-bold" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-                        <th class="p-2 border border-indigo-500 text-left whitespace-nowrap" style="min-width:260px;">ลูกหนี้ / เลข TD</th>
+                        <th class="p-2 border border-indigo-500 text-left whitespace-nowrap sticky top-0 z-20" style="min-width:260px;background:#4f46e5;-webkit-print-color-adjust:exact;print-color-adjust:exact;">ลูกหนี้ / เลข TD</th>
                         ${dateThs}
-                        <th class="p-2 border border-indigo-500 text-center whitespace-nowrap">รวม</th>
+                        <th class="p-2 border border-indigo-500 text-center whitespace-nowrap sticky top-0 z-20" style="background:#4f46e5;-webkit-print-color-adjust:exact;print-color-adjust:exact;">รวม</th>
                     </tr>
                 </thead>
                 <tbody>${debtorRows}</tbody>
@@ -1331,7 +1331,7 @@ function renderTable(data) {
         });
 
         const dateThs = sortedDates.map(d =>
-            `<th class="p-2 border border-indigo-500 text-center whitespace-nowrap" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">${d}</th>`
+            `<th class="p-2 border border-indigo-500 text-center whitespace-nowrap sticky top-0 z-20" style="background:#4f46e5;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${d}</th>`
         ).join('');
 
         let debtorRows = '';
@@ -1396,9 +1396,9 @@ function renderTable(data) {
             <table class="border-collapse border border-slate-300 text-xs shadow-sm" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
                 <thead>
                     <tr class="bg-indigo-600 text-white font-bold" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-                        <th class="p-2 border border-indigo-500 text-left whitespace-nowrap" style="min-width:260px;">ลูกหนี้ / เลข TD</th>
+                        <th class="p-2 border border-indigo-500 text-left whitespace-nowrap sticky top-0 z-20" style="min-width:260px;background:#4f46e5;-webkit-print-color-adjust:exact;print-color-adjust:exact;">ลูกหนี้ / เลข TD</th>
                         ${dateThs}
-                        <th class="p-2 border border-indigo-500 text-center whitespace-nowrap">รวม</th>
+                        <th class="p-2 border border-indigo-500 text-center whitespace-nowrap sticky top-0 z-20" style="background:#4f46e5;-webkit-print-color-adjust:exact;print-color-adjust:exact;">รวม</th>
                     </tr>
                 </thead>
                 <tbody>${debtorRows}</tbody>
@@ -1821,6 +1821,9 @@ document.addEventListener('DOMContentLoaded', () => {
             { drop: 'adv-year-filter-dropdown',    arrow: 'adv-year-filter-arrow',    btn: 'adv-year-filter-btn'    },
             { drop: 'duedate-filter-dropdown',      arrow: 'duedate-filter-arrow',      btn: 'duedate-filter-btn'      },
             { drop: 'adv-duedate-filter-dropdown',  arrow: 'adv-duedate-filter-arrow',  btn: 'adv-duedate-filter-btn'  },
+            { drop: 'cheque-status-filter-dropdown', arrow: 'cheque-status-filter-arrow', btn: 'cheque-status-filter-btn' },
+            { drop: 'chq-face-filter-dropdown',     arrow: 'chq-face-filter-arrow',     btn: 'chq-face-filter-btn'     },
+            { drop: 'chq-defer-filter-dropdown',    arrow: 'chq-defer-filter-arrow',    btn: 'chq-defer-filter-btn'    },
         ].forEach(({ drop, arrow, btn }) => {
             const el = document.getElementById(drop);
             const ar = document.getElementById(arrow);
@@ -1849,6 +1852,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // ปฏิทินเลือกวันที่ครบกำหนด (ตารางรายงานครบกำหนดชำระ + ยอด Advance 90%)
     createDueDateCalendarFilter('duedate', mainDueDateFilter, applyTableFilter);
     createDueDateCalendarFilter('adv-duedate', advDueDateFilter, applyAdvanceFilter);
+
+    // ปฏิทินเลือกวันที่ (ตารางข้อมูลเช็คไม่ผ่าน) — วันที่หน้าเช็ค + วันที่เลื่อนเช็ค แยกกัน
+    createDueDateCalendarFilter('chq-face', chequeFaceDateFilter, renderChequeTable, getChequeFaceDatesWithData);
+    createDueDateCalendarFilter('chq-defer', chequeDeferDateFilter, renderChequeTable, getChequeDeferDatesWithData);
 
     // ปุ่มซ่อน/แสดงกล่องรายละเอียดลูกหนี้ (pivot) แยกอิสระจากปุ่มซ่อนตารางดิบ
     const debtorSummaryToggleBtn = document.getElementById('debtor-summary-toggle-btn');
@@ -1961,13 +1968,13 @@ function renderCmpTable() {
 
     // ===== ส่วนหัวตาราง: บริษัท + ม.ค.-ธ.ค. + รวม =====
     const monthThs = CMP_MONTHS_SHORT.map(m =>
-        `<th class="p-3 border border-violet-500 text-center whitespace-nowrap">${m}</th>`
+        `<th class="p-3 border border-violet-500 text-center whitespace-nowrap sticky top-0 z-20" style="background:#7c3aed;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${m}</th>`
     ).join('');
     thead.innerHTML = `
         <tr class="bg-violet-600 text-white font-bold" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-            <th class="p-3 border border-violet-500 text-left whitespace-nowrap" style="min-width:220px;">บริษัท</th>
+            <th class="p-3 border border-violet-500 text-left whitespace-nowrap sticky top-0 z-20" style="min-width:220px;background:#7c3aed;-webkit-print-color-adjust:exact;print-color-adjust:exact;">บริษัท</th>
             ${monthThs}
-            <th class="p-3 border border-violet-500 text-center whitespace-nowrap" style="background:#5b21b6;-webkit-print-color-adjust:exact;print-color-adjust:exact;">รวม</th>
+            <th class="p-3 border border-violet-500 text-center whitespace-nowrap sticky top-0 z-20" style="background:#5b21b6;-webkit-print-color-adjust:exact;print-color-adjust:exact;">รวม</th>
         </tr>`;
 
     if (!cmpSelectedYear) {
@@ -2093,13 +2100,13 @@ function renderRetTable() {
 
     // ===== ส่วนหัวตาราง: บริษัท + ม.ค.-ธ.ค. + รวม =====
     const monthThs = CMP_MONTHS_SHORT.map(m =>
-        `<th class="p-3 border border-cyan-500 text-center whitespace-nowrap">${m}</th>`
+        `<th class="p-3 border border-cyan-500 text-center whitespace-nowrap sticky top-0 z-20" style="background:#0891b2;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${m}</th>`
     ).join('');
     thead.innerHTML = `
         <tr class="bg-cyan-600 text-white font-bold" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-            <th class="p-3 border border-cyan-500 text-left whitespace-nowrap" style="min-width:220px;">บริษัท</th>
+            <th class="p-3 border border-cyan-500 text-left whitespace-nowrap sticky top-0 z-20" style="min-width:220px;background:#0891b2;-webkit-print-color-adjust:exact;print-color-adjust:exact;">บริษัท</th>
             ${monthThs}
-            <th class="p-3 border border-cyan-500 text-center whitespace-nowrap" style="background:#155e75;-webkit-print-color-adjust:exact;print-color-adjust:exact;">รวม</th>
+            <th class="p-3 border border-cyan-500 text-center whitespace-nowrap sticky top-0 z-20" style="background:#155e75;-webkit-print-color-adjust:exact;print-color-adjust:exact;">รวม</th>
         </tr>`;
 
     if (!retSelectedYear) {
@@ -2189,13 +2196,13 @@ function renderVarianceSummary() {
     if (!thead || !tbody) return;
 
     const monthThs = CMP_MONTHS_SHORT.map(m =>
-        `<th class="p-3 border border-amber-500 text-center whitespace-nowrap">${m}</th>`
+        `<th class="p-3 border border-amber-500 text-center whitespace-nowrap sticky top-0 z-20" style="background:#334155;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${m}</th>`
     ).join('');
     thead.innerHTML = `
         <tr class="bg-slate-700 text-white font-bold" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-            <th class="p-3 border border-slate-600 text-left whitespace-nowrap" style="min-width:220px;">รายการ</th>
+            <th class="p-3 border border-slate-600 text-left whitespace-nowrap sticky top-0 z-20" style="min-width:220px;background:#334155;-webkit-print-color-adjust:exact;print-color-adjust:exact;">รายการ</th>
             ${monthThs}
-            <th class="p-3 border border-slate-600 text-center whitespace-nowrap">รวม</th>
+            <th class="p-3 border border-slate-600 text-center whitespace-nowrap sticky top-0 z-20" style="background:#334155;-webkit-print-color-adjust:exact;print-color-adjust:exact;">รวม</th>
         </tr>`;
 
     if (note) {
@@ -2342,6 +2349,8 @@ function toggleDetailTables() {
 // =====================================================================
 let chequeSelectedStatuses = new Set();
 let chequeUniqueStatusList = [];
+let chequeFaceDateFilter = new Set();
+let chequeDeferDateFilter = new Set();
 
 function isValidDebtorRow(row) {
     const name = (row[DATA1_COL.debtor] || "").toString().trim();
@@ -2466,9 +2475,19 @@ function renderChequeTable() {
         if (!g.deferDate) g.deferDate = (row[DATA1_COL.chequeDeferDate] || "").toString().trim();
     });
 
+    const dateKeyOf = (val) => {
+        const p = parseDateParts(val);
+        return (p.y && p.m && p.d) ? `${p.y}-${p.m}-${p.d}` : '';
+    };
+
     let rows = groupOrder
         .map(k => groups[k])
-        .filter(g => chequeSelectedStatuses.size === 0 || chequeSelectedStatuses.has(g.status));
+        .filter(g => {
+            const matchesStatus = chequeSelectedStatuses.size === 0 || chequeSelectedStatuses.has(g.status);
+            const matchesFace = chequeFaceDateFilter.size === 0 || chequeFaceDateFilter.has(dateKeyOf(g.faceDate));
+            const matchesDefer = chequeDeferDateFilter.size === 0 || chequeDeferDateFilter.has(dateKeyOf(g.deferDate));
+            return matchesStatus && matchesFace && matchesDefer;
+        });
 
     // เรียงตามเลขที่เช็ค จากน้อยไปหามาก
     rows.sort((a, b) => {
@@ -2520,7 +2539,8 @@ function renderChequeTable() {
 // ปฏิทินเลือกวันที่ครบกำหนด (แบบกะทัดรัด) — ใช้ร่วมกับตัวกรองเดือน/ปี/สถานะเดิม (AND)
 // นำไปใช้กับทั้งตาราง "รายงานครบกำหนดชำระ" (prefix: duedate) และ "ยอด Advance 90%" (prefix: adv-duedate)
 // =====================================================================
-function createDueDateCalendarFilter(prefix, selectedSet, onChange) {
+function createDueDateCalendarFilter(prefix, selectedSet, onChange, getDatesWithDataFn) {
+    const getDates = getDatesWithDataFn || bslGetDatesWithData;
     let calYear = new Date().getFullYear();
     let calMonth = new Date().getMonth();
     let selectsBuilt = false;
@@ -2570,7 +2590,7 @@ function createDueDateCalendarFilter(prefix, selectedSet, onChange) {
         const grid = $('-cal-grid');
         if (!grid) return;
 
-        const datesWithData = bslGetDatesWithData();
+        const datesWithData = getDates();
         const firstDay = new Date(calYear, calMonth, 1).getDay();
         const lastDate = new Date(calYear, calMonth + 1, 0).getDate();
 
@@ -2612,7 +2632,7 @@ function createDueDateCalendarFilter(prefix, selectedSet, onChange) {
 
     const selAllBtn = $('-cal-selall');
     if (selAllBtn) selAllBtn.addEventListener('click', () => {
-        const datesWithData = bslGetDatesWithData();
+        const datesWithData = getDates();
         datesWithData.forEach(k => {
             const [y, m] = k.split('-').map(Number);
             if (y === calYear && (m - 1) === calMonth) selectedSet.add(k);
@@ -2654,4 +2674,33 @@ function createDueDateCalendarFilter(prefix, selectedSet, onChange) {
     }
 
     updateSummary();
+}
+
+// =====================================================================
+// Data-source สำหรับปฏิทินตัวกรองของตารางเช็คไม่ผ่าน
+// =====================================================================
+function getChequeFaceDatesWithData() {
+    const set = new Set();
+    if (!Array.isArray(RAW_DATA1)) return set;
+    RAW_DATA1.forEach(row => {
+        if (!isValidDebtorRow(row)) return;
+        const chequeNo = (row[DATA1_COL.chequeNo] || "").toString().trim();
+        if (!chequeNo) return;
+        const p = parseDateParts(row[DATA1_COL.chequeFaceDate]);
+        if (p.y && p.m && p.d) set.add(`${p.y}-${p.m}-${p.d}`);
+    });
+    return set;
+}
+
+function getChequeDeferDatesWithData() {
+    const set = new Set();
+    if (!Array.isArray(RAW_DATA1)) return set;
+    RAW_DATA1.forEach(row => {
+        if (!isValidDebtorRow(row)) return;
+        const chequeNo = (row[DATA1_COL.chequeNo] || "").toString().trim();
+        if (!chequeNo) return;
+        const p = parseDateParts(row[DATA1_COL.chequeDeferDate]);
+        if (p.y && p.m && p.d) set.add(`${p.y}-${p.m}-${p.d}`);
+    });
+    return set;
 }
