@@ -272,7 +272,7 @@
 
             </div>
 
-            <div class="overflow-x-auto" id="main-table-wrapper">
+            <div class="overflow-x-auto bsl-scroll-table" id="main-table-wrapper">
                 <table class="w-full text-left border-collapse border border-slate-300 table-fixed">
                     <colgroup>
                         <col style="width: 11%;"> <!-- วันที่ครบกำหนด -->
@@ -290,17 +290,17 @@
                         <tr class="hidden print:table-row h-[15mm]">
                             <th colspan="9" class="p-0 border-none bg-white"></th>
                         </tr>
-                        <tr class="bg-indigo-600 border-b border-indigo-700 text-white font-bold text-base tracking-wide text-center"
+                        <tr class="bg-indigo-600 border-b border-indigo-700 text-white font-bold text-base tracking-wide text-center print:static"
                             style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                            <th class="p-4 border-r border-indigo-500 whitespace-nowrap">วันที่ครบกำหนด</th>
-                            <th class="p-4 border-r border-indigo-500 whitespace-nowrap" style="background:#4338ca;-webkit-print-color-adjust:exact;print-color-adjust:exact;">เลข TD</th>
-                            <th class="p-4 border-r border-indigo-500 whitespace-nowrap">เลขที่ IV</th>
-                            <th class="p-4 border-r border-indigo-500 whitespace-nowrap">รายละเอียด</th>
-                            <th class="p-3 border-r border-indigo-500 whitespace-nowrap">ประจำเดือน</th>
-                            <th class="p-4 border-r border-indigo-500 whitespace-nowrap">ลูกหนี้</th>
-                            <th class="p-4 border-r border-indigo-500 whitespace-nowrap">สถานะ</th>
-                            <th class="p-4 border-r border-indigo-500 whitespace-nowrap">หมายเหตุ</th>
-                            <th class="p-4 whitespace-nowrap">จำนวนเงิน</th>
+                            <th class="p-4 border-r border-indigo-500 whitespace-nowrap sticky top-0 z-20" style="background:#4f46e5;-webkit-print-color-adjust:exact;print-color-adjust:exact;">วันที่ครบกำหนด</th>
+                            <th class="p-4 border-r border-indigo-500 whitespace-nowrap sticky top-0 z-20" style="background:#4338ca;-webkit-print-color-adjust:exact;print-color-adjust:exact;">เลข TD</th>
+                            <th class="p-4 border-r border-indigo-500 whitespace-nowrap sticky top-0 z-20" style="background:#4f46e5;-webkit-print-color-adjust:exact;print-color-adjust:exact;">เลขที่ IV</th>
+                            <th class="p-4 border-r border-indigo-500 whitespace-nowrap sticky top-0 z-20" style="background:#4f46e5;-webkit-print-color-adjust:exact;print-color-adjust:exact;">รายละเอียด</th>
+                            <th class="p-3 border-r border-indigo-500 whitespace-nowrap sticky top-0 z-20" style="background:#4f46e5;-webkit-print-color-adjust:exact;print-color-adjust:exact;">ประจำเดือน</th>
+                            <th class="p-4 border-r border-indigo-500 whitespace-nowrap sticky top-0 z-20" style="background:#4f46e5;-webkit-print-color-adjust:exact;print-color-adjust:exact;">ลูกหนี้</th>
+                            <th class="p-4 border-r border-indigo-500 whitespace-nowrap sticky top-0 z-20" style="background:#4f46e5;-webkit-print-color-adjust:exact;print-color-adjust:exact;">สถานะ</th>
+                            <th class="p-4 border-r border-indigo-500 whitespace-nowrap sticky top-0 z-20" style="background:#4f46e5;-webkit-print-color-adjust:exact;print-color-adjust:exact;">หมายเหตุ</th>
+                            <th class="p-4 whitespace-nowrap sticky top-0 z-20" style="background:#4f46e5;-webkit-print-color-adjust:exact;print-color-adjust:exact;">จำนวนเงิน</th>
                         </tr>
                     </thead>
                     <tbody id="table-body" class="text-sm text-slate-700">
@@ -322,7 +322,7 @@
                         <span id="debtor-summary-toggle-lbl">ซ่อนรายละเอียดลูกหนี้</span>
                     </button>
                 </div>
-                <div id="debtor-summary-container" class="mb-8 w-full overflow-x-auto">
+                <div id="debtor-summary-container" class="mb-8 w-full overflow-x-auto bsl-scroll-table">
                     <!-- Injected by JS -->
                 </div>
 
@@ -460,7 +460,7 @@
 
             </div>
 
-            <div class="overflow-x-auto" id="advance-table-wrapper">
+            <div class="overflow-x-auto bsl-scroll-table" id="advance-table-wrapper">
                 <table class="w-full text-left border-collapse border border-slate-300 table-fixed">
                     <colgroup>
                         <col style="width: 11%;"> <!-- วันที่ครบกำหนด -->
@@ -473,16 +473,16 @@
                         <col style="width: 22%;"> <!-- จำนวนเงิน Advance 90% -->
                     </colgroup>
                     <thead>
-                        <tr class="bg-emerald-600 border-b border-emerald-700 text-white font-bold text-base tracking-wide text-center"
+                        <tr class="bg-emerald-600 border-b border-emerald-700 text-white font-bold text-base tracking-wide text-center print:static"
                             style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                            <th class="p-4 border-r border-emerald-500 whitespace-nowrap">วันที่ครบกำหนด</th>
-                            <th class="p-4 border-r border-emerald-500 whitespace-nowrap" style="background:#047857;-webkit-print-color-adjust:exact;print-color-adjust:exact;">เลข TD</th>
-                            <th class="p-4 border-r border-emerald-500 whitespace-nowrap">เลขที่ IV</th>
-                            <th class="p-4 border-r border-emerald-500 whitespace-nowrap">รายละเอียด</th>
-                            <th class="p-3 border-r border-emerald-500 whitespace-nowrap">ประจำเดือน</th>
-                            <th class="p-4 border-r border-emerald-500 whitespace-nowrap">ลูกหนี้</th>
-                            <th class="p-4 border-r border-emerald-500 whitespace-nowrap">สถานะ</th>
-                            <th class="p-4 whitespace-nowrap">ยอด Advance 90%</th>
+                            <th class="p-4 border-r border-emerald-500 whitespace-nowrap sticky top-0 z-20" style="background:#059669;-webkit-print-color-adjust:exact;print-color-adjust:exact;">วันที่ครบกำหนด</th>
+                            <th class="p-4 border-r border-emerald-500 whitespace-nowrap sticky top-0 z-20" style="background:#047857;-webkit-print-color-adjust:exact;print-color-adjust:exact;">เลข TD</th>
+                            <th class="p-4 border-r border-emerald-500 whitespace-nowrap sticky top-0 z-20" style="background:#059669;-webkit-print-color-adjust:exact;print-color-adjust:exact;">เลขที่ IV</th>
+                            <th class="p-4 border-r border-emerald-500 whitespace-nowrap sticky top-0 z-20" style="background:#059669;-webkit-print-color-adjust:exact;print-color-adjust:exact;">รายละเอียด</th>
+                            <th class="p-3 border-r border-emerald-500 whitespace-nowrap sticky top-0 z-20" style="background:#059669;-webkit-print-color-adjust:exact;print-color-adjust:exact;">ประจำเดือน</th>
+                            <th class="p-4 border-r border-emerald-500 whitespace-nowrap sticky top-0 z-20" style="background:#059669;-webkit-print-color-adjust:exact;print-color-adjust:exact;">ลูกหนี้</th>
+                            <th class="p-4 border-r border-emerald-500 whitespace-nowrap sticky top-0 z-20" style="background:#059669;-webkit-print-color-adjust:exact;print-color-adjust:exact;">สถานะ</th>
+                            <th class="p-4 whitespace-nowrap sticky top-0 z-20" style="background:#059669;-webkit-print-color-adjust:exact;print-color-adjust:exact;">ยอด Advance 90%</th>
                         </tr>
                     </thead>
                     <tbody id="advance-table-body" class="text-sm text-slate-700">
@@ -503,7 +503,7 @@
                         <span id="adv-summary-toggle-lbl">ซ่อนรายละเอียดลูกหนี้</span>
                     </button>
                 </div>
-                <div id="advance-summary-container" class="mb-6 w-full overflow-x-auto"></div>
+                <div id="advance-summary-container" class="mb-6 w-full overflow-x-auto bsl-scroll-table"></div>
                 <div class="flex justify-end">
                     <div class="flex items-center gap-4 px-8 py-4 bg-slate-50 rounded-2xl border border-slate-200 shadow-inner">
                         <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">ยอดเงินรวม:</span>
@@ -528,7 +528,7 @@
                 </div>
             </div>
 
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto bsl-scroll-table">
                 <table class="border-collapse border border-slate-300 text-xs shadow-sm w-full" id="cmp-table">
                     <thead id="cmp-table-thead">
                         <tr class="bg-violet-600 text-white font-bold" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
@@ -561,7 +561,7 @@
                 </div>
             </div>
 
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto bsl-scroll-table">
                 <table class="border-collapse border border-slate-300 text-xs shadow-sm w-full" id="ret-table">
                     <thead id="ret-table-thead">
                         <tr class="bg-cyan-600 text-white font-bold" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
@@ -598,7 +598,7 @@
                 </div>
             </div>
 
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto bsl-scroll-table">
                 <table class="border-collapse border border-slate-300 text-xs shadow-sm w-full" id="var-summary-table">
                     <thead id="var-summary-thead">
                         <!-- Injected by JS -->
@@ -633,20 +633,82 @@
                             class="hidden absolute right-0 mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-50 p-2 scale-95 opacity-0 transition-all duration-150 origin-top-right">
                         </div>
                     </div>
+
+                    <div class="relative inline-block text-left" id="chq-face-filter-wrapper">
+                        <button id="chq-face-filter-btn"
+                            class="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-all focus:outline-none">
+                            <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <span id="chq-face-filter-label">วันที่หน้าเช็ค</span>
+                            <svg id="chq-face-filter-arrow" class="w-3 h-3 text-slate-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="chq-face-filter-dropdown"
+                            class="hidden duecal-dropdown absolute right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 p-3 scale-95 opacity-0 transition-all duration-150 origin-top-right">
+                            <div class="duecal-topbar">
+                                <button class="duecal-nav" id="chq-face-cal-prev" type="button">&lsaquo;</button>
+                                <select class="duecal-sel" id="chq-face-cal-month-sel"></select>
+                                <select class="duecal-sel" id="chq-face-cal-year-sel"></select>
+                                <button class="duecal-nav" id="chq-face-cal-next" type="button">&rsaquo;</button>
+                            </div>
+                            <div class="duecal-actions">
+                                <button class="duecal-btn sel" id="chq-face-cal-selall" type="button">เลือกทั้งหมด</button>
+                                <button class="duecal-btn clr" id="chq-face-cal-clear" type="button">ล้าง</button>
+                            </div>
+                            <div class="duecal-weekdays">
+                                <span>อา</span><span>จ</span><span>อ</span><span>พ</span><span>พฤ</span><span>ศ</span><span>ส</span>
+                            </div>
+                            <div class="duecal-grid" id="chq-face-cal-grid"></div>
+                            <div class="duecal-summary" id="chq-face-cal-summary">ยังไม่ได้เลือกวันที่</div>
+                        </div>
+                    </div>
+
+                    <div class="relative inline-block text-left" id="chq-defer-filter-wrapper">
+                        <button id="chq-defer-filter-btn"
+                            class="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-all focus:outline-none">
+                            <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <span id="chq-defer-filter-label">วันที่เลื่อนเช็ค</span>
+                            <svg id="chq-defer-filter-arrow" class="w-3 h-3 text-slate-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="chq-defer-filter-dropdown"
+                            class="hidden duecal-dropdown absolute right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 p-3 scale-95 opacity-0 transition-all duration-150 origin-top-right">
+                            <div class="duecal-topbar">
+                                <button class="duecal-nav" id="chq-defer-cal-prev" type="button">&lsaquo;</button>
+                                <select class="duecal-sel" id="chq-defer-cal-month-sel"></select>
+                                <select class="duecal-sel" id="chq-defer-cal-year-sel"></select>
+                                <button class="duecal-nav" id="chq-defer-cal-next" type="button">&rsaquo;</button>
+                            </div>
+                            <div class="duecal-actions">
+                                <button class="duecal-btn sel" id="chq-defer-cal-selall" type="button">เลือกทั้งหมด</button>
+                                <button class="duecal-btn clr" id="chq-defer-cal-clear" type="button">ล้าง</button>
+                            </div>
+                            <div class="duecal-weekdays">
+                                <span>อา</span><span>จ</span><span>อ</span><span>พ</span><span>พฤ</span><span>ศ</span><span>ส</span>
+                            </div>
+                            <div class="duecal-grid" id="chq-defer-cal-grid"></div>
+                            <div class="duecal-summary" id="chq-defer-cal-summary">ยังไม่ได้เลือกวันที่</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto bsl-scroll-table">
                 <table class="border-collapse border border-slate-300 text-xs shadow-sm w-full" id="cheque-table">
                     <thead>
                         <tr class="bg-rose-600 text-white font-bold" style="-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-                            <th class="p-3 border border-rose-500 text-left whitespace-nowrap" style="min-width:200px;">บริษัท / ลูกหนี้</th>
-                            <th class="p-3 border border-rose-500 text-center whitespace-nowrap">เลขที่เช็ค</th>
-                            <th class="p-3 border border-rose-500 text-center whitespace-nowrap">วันที่หน้าเช็ค</th>
-                            <th class="p-3 border border-rose-500 text-center whitespace-nowrap">วันที่เลื่อนเช็ค</th>
-                            <th class="p-3 border border-rose-500 text-center whitespace-nowrap">ยอดเงิน (รวม)</th>
-                            <th class="p-3 border border-rose-500 text-center whitespace-nowrap">ค่าธรรมเนียมเช็ค (รวม)</th>
-                            <th class="p-3 border border-rose-500 text-center whitespace-nowrap">สถานะเช็ค</th>
+                            <th class="p-3 border border-rose-500 text-left whitespace-nowrap sticky top-0 z-20" style="min-width:200px;background:#e11d48;-webkit-print-color-adjust:exact;print-color-adjust:exact;">บริษัท / ลูกหนี้</th>
+                            <th class="p-3 border border-rose-500 text-center whitespace-nowrap sticky top-0 z-20" style="background:#e11d48;-webkit-print-color-adjust:exact;print-color-adjust:exact;">เลขที่เช็ค</th>
+                            <th class="p-3 border border-rose-500 text-center whitespace-nowrap sticky top-0 z-20" style="background:#e11d48;-webkit-print-color-adjust:exact;print-color-adjust:exact;">วันที่หน้าเช็ค</th>
+                            <th class="p-3 border border-rose-500 text-center whitespace-nowrap sticky top-0 z-20" style="background:#e11d48;-webkit-print-color-adjust:exact;print-color-adjust:exact;">วันที่เลื่อนเช็ค</th>
+                            <th class="p-3 border border-rose-500 text-center whitespace-nowrap sticky top-0 z-20" style="background:#e11d48;-webkit-print-color-adjust:exact;print-color-adjust:exact;">ยอดเงิน (รวม)</th>
+                            <th class="p-3 border border-rose-500 text-center whitespace-nowrap sticky top-0 z-20" style="background:#e11d48;-webkit-print-color-adjust:exact;print-color-adjust:exact;">ค่าธรรมเนียมเช็ค (รวม)</th>
+                            <th class="p-3 border border-rose-500 text-center whitespace-nowrap sticky top-0 z-20" style="background:#e11d48;-webkit-print-color-adjust:exact;print-color-adjust:exact;">สถานะเช็ค</th>
                         </tr>
                     </thead>
                     <tbody id="cheque-table-body" class="text-slate-700">
