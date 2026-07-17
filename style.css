@@ -197,3 +197,14 @@ body {
     background: #f8fafc; border: 1px solid #e2e8f0; padding: 5px 8px; border-radius: 6px;
     font-size: 10px; color: #475569; font-weight: 700; text-align: center;
 }
+
+/* ===== Sticky table headers: cap wrapper height so it becomes its own
+   scroll region, letting the sticky <thead> stay pinned while rows scroll ===== */
+.bsl-scroll-table {
+    max-height: 560px;
+    overflow-y: auto;
+}
+@media print {
+    .bsl-scroll-table { max-height: none !important; overflow: visible !important; }
+    thead th, th[style*="sticky"], .sticky { position: static !important; top: auto !important; }
+}
