@@ -1031,13 +1031,14 @@ function applyAdvanceFilter() {
 
 function renderAdvanceTable(data) {
     const body = document.getElementById('advance-table-body'); if (!body) return;
+    const summaryContainer = document.getElementById('advance-summary-container');
 
     const validData = data.filter(r => {
         const name = (r.i || "").trim();
         return name && name !== "ลูกหนี้" && name !== "ชื่อลูกหนี้" && name !== "Debtor";
     });
 
-    // --- ปุ่มซ่อน/แสดง tbody ---
+    // --- ปุ่มซ่อน/แสดง tbody (ตารางดิบ) เท่านั้น แยกจากกล่องรายละเอียดลูกหนี้ ---
     const toggleBtn = document.getElementById('adv-table-toggle-btn');
     const toggleLbl = document.getElementById('adv-table-toggle-lbl');
     const toggleIcon = document.getElementById('adv-table-toggle-icon');
@@ -1074,7 +1075,6 @@ function renderAdvanceTable(data) {
     `}).join('');
 
     // --- Pivot: แยกแถวตาม TD ---
-    const summaryContainer = document.getElementById('advance-summary-container');
     if (summaryContainer) {
         const dateSet = new Set();
         const debtorOrder = [];
@@ -1257,7 +1257,7 @@ function renderTable(data) {
         return name && name !== "ลูกหนี้" && name !== "ชื่อลูกหนี้" && name !== "Debtor";
     });
 
-    // --- ปุ่มซ่อน/แสดง tbody ---
+    // --- ปุ่มซ่อน/แสดง tbody (ตารางดิบ) เท่านั้น แยกจากกล่องรายละเอียดลูกหนี้ ---
     const toggleBtn = document.getElementById('main-table-toggle-btn');
     const toggleLbl = document.getElementById('main-table-toggle-lbl');
     const toggleIcon = document.getElementById('main-table-toggle-icon');
@@ -1849,6 +1849,31 @@ document.addEventListener('DOMContentLoaded', () => {
     // ปฏิทินเลือกวันที่ครบกำหนด (ตารางรายงานครบกำหนดชำระ + ยอด Advance 90%)
     createDueDateCalendarFilter('duedate', mainDueDateFilter, applyTableFilter);
     createDueDateCalendarFilter('adv-duedate', advDueDateFilter, applyAdvanceFilter);
+
+    // ปุ่มซ่อน/แสดงกล่องรายละเอียดลูกหนี้ (pivot) แยกอิสระจากปุ่มซ่อนตารางดิบ
+    const debtorSummaryToggleBtn = document.getElementById('debtor-summary-toggle-btn');
+    if (debtorSummaryToggleBtn) debtorSummaryToggleBtn.addEventListener('click', () => {
+        const el = document.getElementById('debtor-summary-container');
+        if (!el) return;
+        const isHidden = el.style.display === 'none';
+        el.style.display = isHidden ? '' : 'none';
+        const lbl = document.getElementById('debtor-summary-toggle-lbl');
+        const icon = document.getElementById('debtor-summary-toggle-icon');
+        if (lbl) lbl.textContent = isHidden ? 'ซ่อนรายละเอียดลูกหนี้' : 'แสดงรายละเอียดลูกหนี้';
+        if (icon) icon.style.transform = isHidden ? '' : 'rotate(-90deg)';
+    });
+
+    const advSummaryToggleBtn = document.getElementById('adv-summary-toggle-btn');
+    if (advSummaryToggleBtn) advSummaryToggleBtn.addEventListener('click', () => {
+        const el = document.getElementById('advance-summary-container');
+        if (!el) return;
+        const isHidden = el.style.display === 'none';
+        el.style.display = isHidden ? '' : 'none';
+        const lbl = document.getElementById('adv-summary-toggle-lbl');
+        const icon = document.getElementById('adv-summary-toggle-icon');
+        if (lbl) lbl.textContent = isHidden ? 'ซ่อนรายละเอียดลูกหนี้' : 'แสดงรายละเอียดลูกหนี้';
+        if (icon) icon.style.transform = isHidden ? '' : 'rotate(-90deg)';
+    });
 
     const overlay = document.getElementById('pdfModal');
     if (overlay) overlay.addEventListener('click', (e) => {
