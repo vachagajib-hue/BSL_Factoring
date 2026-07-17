@@ -312,6 +312,16 @@
             <!-- ส่วนท้ายรายงาน: สรุปยอดและลายเซ็น (ห้ามแยกหน้ากัน) -->
             <div id="report-footer-section" class="mt-8">
                 <!-- สรุปยอดตามลูกหนี้ (Debtor Summary) -->
+                <div class="flex items-center gap-3 mb-3" data-html2canvas-ignore="true">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">รายละเอียดลูกหนี้ (แยกตาม TD)</span>
+                    <button id="debtor-summary-toggle-btn"
+                        class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-1 rounded-md flex items-center gap-1.5 transition-all font-bold text-[10px] uppercase tracking-wider border border-indigo-100">
+                        <svg id="debtor-summary-toggle-icon" class="w-3.5 h-3.5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                        <span id="debtor-summary-toggle-lbl">ซ่อนรายละเอียดลูกหนี้</span>
+                    </button>
+                </div>
                 <div id="debtor-summary-container" class="mb-8 w-full overflow-x-auto">
                     <!-- Injected by JS -->
                 </div>
@@ -483,6 +493,16 @@
 
             <div class="border-t border-slate-100 pt-6 mt-6" id="advance-footer-section">
                 <!-- Pivot Summary -->
+                <div class="flex items-center gap-3 mb-3" data-html2canvas-ignore="true">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">รายละเอียดลูกหนี้ (แยกตาม TD)</span>
+                    <button id="adv-summary-toggle-btn"
+                        class="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1 rounded-md flex items-center gap-1.5 transition-all font-bold text-[10px] uppercase tracking-wider border border-emerald-100">
+                        <svg id="adv-summary-toggle-icon" class="w-3.5 h-3.5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                        <span id="adv-summary-toggle-lbl">ซ่อนรายละเอียดลูกหนี้</span>
+                    </button>
+                </div>
                 <div id="advance-summary-container" class="mb-6 w-full overflow-x-auto"></div>
                 <div class="flex justify-end">
                     <div class="flex items-center gap-4 px-8 py-4 bg-slate-50 rounded-2xl border border-slate-200 shadow-inner">
