@@ -2464,12 +2464,14 @@ function renderChequeTable() {
                 deferDate: (row[DATA1_COL.chequeDeferDate] || "").toString().trim(),
                 status: statusKey,
                 amount: 0,
+                bill100: 0,
                 fee: 0
             };
             groupOrder.push(chequeNo);
         }
         const g = groups[chequeNo];
         g.amount += parseNumber(row[DATA1_COL.used]);      // P
+        g.bill100 += parseNumber(row[DATA1_COL.bill]);     // N
         g.fee += parseNumber(row[DATA1_COL.chequeFee]);    // AA
         if (!g.faceDate) g.faceDate = (row[DATA1_COL.chequeFaceDate] || "").toString().trim();
         if (!g.deferDate) g.deferDate = (row[DATA1_COL.chequeDeferDate] || "").toString().trim();
@@ -2498,7 +2500,7 @@ function renderChequeTable() {
     });
 
     if (rows.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 italic">ไม่พบเช็คที่ตรงกับสถานะที่เลือก</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-slate-400 italic">ไม่พบเช็คที่ตรงกับสถานะที่เลือก</td></tr>`;
         tfoot.innerHTML = '';
         return;
     }
@@ -2510,10 +2512,14 @@ function renderChequeTable() {
         return val;
     };
 
-    let totalAmount = 0, totalFee = 0;
+    let totalAmount = 0, totalBill100 = 0, totalRemain10 = 0, totalFee = 0;
     tbody.innerHTML = rows.map(g => {
+        const remain10 = g.bill100 - g.amount;
         totalAmount += g.amount;
+        totalBill100 += g.bill100;
+        totalRemain10 += remain10;
         totalFee += g.fee;
+        const remainColor = remain10 < 0 ? '#dc2626' : '#166534';
         return `
         <tr class="border-b border-slate-300 hover:bg-slate-50 transition-colors text-center">
             <td class="p-3 border-r border-slate-300 font-bold text-slate-700 whitespace-normal text-left">${g.company}</td>
@@ -2521,15 +2527,20 @@ function renderChequeTable() {
             <td class="p-3 border-r border-slate-300 text-slate-500 whitespace-nowrap">${fmtDate(g.faceDate)}</td>
             <td class="p-3 border-r border-slate-300 text-slate-500 whitespace-nowrap">${fmtDate(g.deferDate)}</td>
             <td class="p-3 border-r border-slate-300 text-right font-black text-slate-800 whitespace-nowrap">${formatMoney(g.amount)}</td>
+            <td class="p-3 border-r border-slate-300 text-right font-black text-slate-800 whitespace-nowrap">${formatMoney(g.bill100)}</td>
+            <td class="p-3 border-r border-slate-300 text-right font-bold whitespace-nowrap" style="color:${remainColor};">${formatMoney(remain10)}</td>
             <td class="p-3 border-r border-slate-300 text-right font-medium text-slate-600 whitespace-nowrap">${formatMoney(g.fee)}</td>
             <td class="p-3 whitespace-nowrap"><span class="inline-block px-2 py-1 rounded font-bold text-rose-800" style="background:#fee2e2;">${g.status}</span></td>
         </tr>`;
     }).join('');
 
+    const totalRemainColor = totalRemain10 < 0 ? '#fca5a5' : '#ffffff';
     tfoot.innerHTML = `
         <tr style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#881337;">
             <td colspan="4" class="p-3 font-black whitespace-nowrap" style="background:#881337;color:#fff;letter-spacing:0.05em;">รวมทั้งสิ้น (${rows.length} เช็ค)</td>
             <td class="p-3 text-right font-black whitespace-nowrap" style="background:#881337;color:#fff;">${formatMoney(totalAmount)}</td>
+            <td class="p-3 text-right font-black whitespace-nowrap" style="background:#881337;color:#fff;">${formatMoney(totalBill100)}</td>
+            <td class="p-3 text-right font-black whitespace-nowrap" style="background:#881337;color:${totalRemainColor};">${formatMoney(totalRemain10)}</td>
             <td class="p-3 text-right font-black whitespace-nowrap" style="background:#881337;color:#fff;">${formatMoney(totalFee)}</td>
             <td style="background:#881337;"></td>
         </tr>`;
@@ -2547,6 +2558,11 @@ function createDueDateCalendarFilter(prefix, selectedSet, onChange, getDatesWith
 
     const $ = (suffix) => document.getElementById(prefix + suffix);
     const toDateKey = (y, m, d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+    // จำข้อความป้ายกำกับเดิมที่มีอยู่ใน HTML (เช่น "วันที่หน้าเช็ค", "วันที่เลื่อนเช็ค")
+    // เพื่อไม่ให้ถูกเขียนทับด้วยข้อความ default ตอนอัปเดตจำนวนที่เลือก
+    const initialLblEl = document.getElementById(prefix + '-filter-label');
+    const baseLabel = initialLblEl ? initialLblEl.textContent.trim() : 'วันที่ครบกำหนด';
 
     function populateSelects() {
         if (selectsBuilt) return;
@@ -2572,11 +2588,11 @@ function createDueDateCalendarFilter(prefix, selectedSet, onChange, getDatesWith
         const lbl = $('-filter-label');
         if (selectedSet.size === 0) {
             if (s) s.textContent = 'ยังไม่ได้เลือกวันที่';
-            if (lbl) lbl.textContent = 'วันที่ครบกำหนด';
+            if (lbl) lbl.textContent = baseLabel;
         } else {
             const dayLabels = Array.from(selectedSet).sort().map(k => k.split('-')[2]).join(', ');
             if (s) s.textContent = `เลือกแล้ว ${selectedSet.size} วัน: ${dayLabels}`;
-            if (lbl) lbl.textContent = `วันที่ครบกำหนด (${selectedSet.size})`;
+            if (lbl) lbl.textContent = `${baseLabel} (${selectedSet.size})`;
         }
     }
 
