@@ -1442,69 +1442,55 @@ function exportToPDF() {
 }
 
 // Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" — ใช้ html2pdf (โหลดไว้แล้วในหน้าเว็บ)
-function exportDebtorSummaryToPDF() {
-    const el = document.getElementById('debtor-summary-container');
+// พิมพ์เฉพาะกล่องที่ระบุผ่านระบบ Print ของเบราว์เซอร์ (เหมือน exportToPDF() หลัก)
+// เพราะ html2canvas/html2pdf มีปัญหากับตารางที่มีคอลัมน์เยอะ + sticky header + font ไทย
+// ทำให้ได้ไฟล์ PDF ว่างเปล่า จึงใช้วิธี window.print() ที่เสถียรกว่าแทน
+function bslPrintSection(containerId, bodyClass, opts) {
+    const el = document.getElementById(containerId);
     if (!el || !el.innerHTML.trim()) {
         alert('ไม่มีข้อมูลสำหรับ Export PDF');
         return;
     }
-    const btn = document.getElementById('btnExportDebtorSummaryPDF');
-    const originalLabel = btn ? btn.innerHTML : '';
-    if (btn) { btn.disabled = true; btn.innerHTML = 'กำลังสร้าง PDF...'; }
 
-    const today = new Date();
-    const dd = String(today.getDate()).padStart(2, '0');
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const yyyy = today.getFullYear();
+    const orientation = (opts && opts.orientation) || 'portrait';
 
-    const opt = {
-        margin: 5,
-        filename: `รายละเอียดลูกหนี้_แยกตามTD_${dd}-${mm}-${yyyy}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    // ถ้าตารางถูกกดซ่อนอยู่ (ปุ่มซ่อน/แสดงรายละเอียด) ให้แสดงชั่วคราวเพื่อพิมพ์ แล้วคืนสถานะเดิม
+    const wasHidden = el.style.display === 'none';
+    if (wasHidden) el.style.display = '';
+
+    const styleEl = document.createElement('style');
+    styleEl.id = 'bsl-temp-print-style';
+    styleEl.textContent = `@media print { @page { size: A4 ${orientation}; margin: 0; } }`;
+    document.head.appendChild(styleEl);
+
+    document.body.classList.add(bodyClass);
+
+    let cleaned = false;
+    const cleanup = () => {
+        if (cleaned) return;
+        cleaned = true;
+        document.body.classList.remove(bodyClass);
+        if (wasHidden) el.style.display = 'none';
+        const s = document.getElementById('bsl-temp-print-style');
+        if (s) s.remove();
+        window.removeEventListener('afterprint', cleanup);
     };
+    window.addEventListener('afterprint', cleanup);
 
-    html2pdf().set(opt).from(el).save().then(() => {
-        if (btn) { btn.disabled = false; btn.innerHTML = originalLabel; }
-    }).catch(() => {
-        if (btn) { btn.disabled = false; btn.innerHTML = originalLabel; }
-        alert('เกิดข้อผิดพลาดในการสร้าง PDF กรุณาลองใหม่อีกครั้ง');
-    });
+    setTimeout(() => {
+        window.print();
+        setTimeout(cleanup, 1000); // เผื่อเบราว์เซอร์บางตัวไม่ยิง afterprint
+    }, 200);
 }
 
-// Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" ในการ์ดยอด Advance 90% — ใช้ html2pdf
+// Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" ในการ์ด "รายงานครบกำหนดชำระ"
+function exportDebtorSummaryToPDF() {
+    bslPrintSection('debtor-summary-container', 'bsl-print-debtor-only', { orientation: 'landscape' });
+}
+
+// Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" ในการ์ดยอด Advance 90%
 function exportAdvDebtorSummaryToPDF() {
-    const el = document.getElementById('advance-summary-container');
-    if (!el || !el.innerHTML.trim()) {
-        alert('ไม่มีข้อมูลสำหรับ Export PDF');
-        return;
-    }
-    const btn = document.getElementById('btnExportAdvDebtorSummaryPDF');
-    const originalLabel = btn ? btn.innerHTML : '';
-    if (btn) { btn.disabled = true; btn.innerHTML = 'กำลังสร้าง PDF...'; }
-
-    const today = new Date();
-    const dd = String(today.getDate()).padStart(2, '0');
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const yyyy = today.getFullYear();
-
-    const opt = {
-        margin: 5,
-        filename: `รายละเอียดลูกหนี้_Advance90_แยกตามTD_${dd}-${mm}-${yyyy}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    };
-
-    html2pdf().set(opt).from(el).save().then(() => {
-        if (btn) { btn.disabled = false; btn.innerHTML = originalLabel; }
-    }).catch(() => {
-        if (btn) { btn.disabled = false; btn.innerHTML = originalLabel; }
-        alert('เกิดข้อผิดพลาดในการสร้าง PDF กรุณาลองใหม่อีกครั้ง');
-    });
+    bslPrintSection('advance-summary-container', 'bsl-print-adv-debtor-only', { orientation: 'landscape' });
 }
 
 /* =====================================================================
