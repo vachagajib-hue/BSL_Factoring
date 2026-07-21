@@ -1517,7 +1517,8 @@ function bslPrintSection(containerId, opts) {
             }
             #bsl-print-clone th, #bsl-print-clone td {
                 white-space: normal !important;
-                word-break: break-word !important;
+                word-break: normal !important;
+                overflow-wrap: break-word !important;
                 font-size: 9px !important;
                 padding: 4px 5px !important;
                 line-height: 1.3 !important;
@@ -1575,7 +1576,8 @@ function exportAdvanceTableToPDF() {
 
 // Export PDF ตาราง "ข้อมูลเช็ค" — A4 แนวตั้ง
 function exportChequeTableToPDF() {
-    bslPrintSection('cheque-area', { orientation: 'portrait' });
+    // ตารางนี้มีคอลัมน์เยอะ (9 คอลัมน์) ใช้แนวนอนเพื่อให้แต่ละแถวพอดี 1 บรรทัด ไม่ล้นจนต้องตัดคำ
+    bslPrintSection('cheque-area', { orientation: 'landscape' });
 }
 
 /* =====================================================================
