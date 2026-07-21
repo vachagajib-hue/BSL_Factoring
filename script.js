@@ -21,6 +21,7 @@ let advUniqueStatusList = [];
 let advUniqueMonthsList = [];
 let advUniqueYearsList = [];
 let mainDueDateFilter = new Set();
+let debtorDueDateFilter = new Set(); // ปฏิทินตัวกรองวันที่ครบกำหนด เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)"
 let advDueDateFilter = new Set();
 
 const KPI_DATA = [
@@ -1305,7 +1306,15 @@ function renderTable(data) {
         const pivotByDebtor = {};
         let grandTotal = 0;
 
-        validData.forEach(r => {
+        // กรองด้วยปฏิทิน "วันที่ครบกำหนด" เฉพาะตารางนี้ (ไม่กระทบตารางรายการดิบด้านบน)
+        const pivotSourceData = (debtorDueDateFilter.size === 0) ? validData : validData.filter(r => {
+            const parts = (r.c || '').split('/'); // DD/MM/YYYY
+            if (parts.length !== 3) return false;
+            const key = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            return debtorDueDateFilter.has(key);
+        });
+
+        pivotSourceData.forEach(r => {
             const name = r.i, date = r.c, amt = r.n;
             const tdKey = r.td || '-';
             const desc  = r.g || '';
@@ -1421,6 +1430,39 @@ function exportToPDF() {
     setTimeout(() => {
         window.print();
     }, 300);
+}
+
+// Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" — ใช้ html2pdf (โหลดไว้แล้วในหน้าเว็บ)
+function exportDebtorSummaryToPDF() {
+    const el = document.getElementById('debtor-summary-container');
+    if (!el || !el.innerHTML.trim()) {
+        alert('ไม่มีข้อมูลสำหรับ Export PDF');
+        return;
+    }
+    const btn = document.getElementById('btnExportDebtorSummaryPDF');
+    const originalLabel = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = 'กำลังสร้าง PDF...'; }
+
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yyyy = today.getFullYear();
+
+    const opt = {
+        margin: 5,
+        filename: `รายละเอียดลูกหนี้_แยกตามTD_${dd}-${mm}-${yyyy}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    html2pdf().set(opt).from(el).save().then(() => {
+        if (btn) { btn.disabled = false; btn.innerHTML = originalLabel; }
+    }).catch(() => {
+        if (btn) { btn.disabled = false; btn.innerHTML = originalLabel; }
+        alert('เกิดข้อผิดพลาดในการสร้าง PDF กรุณาลองใหม่อีกครั้ง');
+    });
 }
 
 /* =====================================================================
@@ -1852,6 +1894,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // ปฏิทินเลือกวันที่ครบกำหนด (ตารางรายงานครบกำหนดชำระ + ยอด Advance 90%)
     createDueDateCalendarFilter('duedate', mainDueDateFilter, applyTableFilter);
     createDueDateCalendarFilter('adv-duedate', advDueDateFilter, applyAdvanceFilter);
+
+    // ปฏิทินเลือกวันที่ครบกำหนด เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)"
+    createDueDateCalendarFilter('debtor-duedate', debtorDueDateFilter, applyTableFilter);
+
+    // ปุ่ม Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)"
+    const btnExportDebtorSummaryPDF = document.getElementById('btnExportDebtorSummaryPDF');
+    if (btnExportDebtorSummaryPDF) btnExportDebtorSummaryPDF.addEventListener('click', exportDebtorSummaryToPDF);
 
     // ปฏิทินเลือกวันที่ (ตารางข้อมูลเช็คไม่ผ่าน) — วันที่หน้าเช็ค + วันที่เลื่อนเช็ค แยกกัน
     createDueDateCalendarFilter('chq-face', chequeFaceDateFilter, renderChequeTable, getChequeFaceDatesWithData);
