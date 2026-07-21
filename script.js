@@ -1574,7 +1574,7 @@ function exportAdvanceTableToPDF() {
     });
 }
 
-// Export PDF ตาราง "ข้อมูลเช็ค" — A4 แนวตั้ง
+// Export PDF ตาราง "ข้อมูลเช็ค" — A4 แนวนอน
 function exportChequeTableToPDF() {
     // ตารางนี้มีคอลัมน์เยอะ (9 คอลัมน์) ใช้แนวนอนเพื่อให้แต่ละแถวพอดี 1 บรรทัด ไม่ล้นจนต้องตัดคำ
     bslPrintSection('cheque-area', { orientation: 'landscape' });
