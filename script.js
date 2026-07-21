@@ -1441,38 +1441,62 @@ function exportToPDF() {
     }, 300);
 }
 
-// Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" — ใช้ html2pdf (โหลดไว้แล้วในหน้าเว็บ)
-// พิมพ์เฉพาะกล่องที่ระบุผ่านระบบ Print ของเบราว์เซอร์ (เหมือน exportToPDF() หลัก)
-// เพราะ html2canvas/html2pdf มีปัญหากับตารางที่มีคอลัมน์เยอะ + sticky header + font ไทย
-// ทำให้ได้ไฟล์ PDF ว่างเปล่า จึงใช้วิธี window.print() ที่เสถียรกว่าแทน
-function bslPrintSection(containerId, bodyClass, opts) {
-    const el = document.getElementById(containerId);
-    if (!el || !el.innerHTML.trim()) {
+// Export PDF เฉพาะตารางที่ระบุ ผ่านระบบ Print ของเบราว์เซอร์ (เหมือน exportToPDF() หลัก)
+// วิธีการ: โคลนเนื้อหาของตารางออกมาไว้เป็นก้อนเดี่ยวๆ ต่อท้าย <body> แล้วซ่อนทุกอย่างอื่นด้วย display:none
+// (ไม่ใช้วิธี visibility ซ้อนกับโครงสร้างเดิมที่มี sticky header/position อื่นๆ เพราะทำให้พิมพ์ออกมาซ้อนทับกัน)
+function bslPrintSection(containerId, opts) {
+    const src = document.getElementById(containerId);
+    if (!src || !src.innerHTML.trim()) {
         alert('ไม่มีข้อมูลสำหรับ Export PDF');
         return;
     }
 
     const orientation = (opts && opts.orientation) || 'portrait';
 
-    // ถ้าตารางถูกกดซ่อนอยู่ (ปุ่มซ่อน/แสดงรายละเอียด) ให้แสดงชั่วคราวเพื่อพิมพ์ แล้วคืนสถานะเดิม
-    const wasHidden = el.style.display === 'none';
-    if (wasHidden) el.style.display = '';
+    // ล้างของเก่าที่อาจค้างจากครั้งก่อน (เผื่อ cleanup รอบก่อนไม่สำเร็จ)
+    document.getElementById('bsl-print-clone')?.remove();
+    document.getElementById('bsl-temp-print-style')?.remove();
+    document.body.classList.remove('bsl-print-clone-mode');
+
+    const printBox = document.createElement('div');
+    printBox.id = 'bsl-print-clone';
+    printBox.innerHTML = src.innerHTML;
+    document.body.appendChild(printBox);
 
     const styleEl = document.createElement('style');
     styleEl.id = 'bsl-temp-print-style';
-    styleEl.textContent = `@media print { @page { size: A4 ${orientation}; margin: 0; } }`;
+    styleEl.textContent = `
+        @media print {
+            @page { size: A4 ${orientation}; margin: 0; }
+            body.bsl-print-clone-mode > *:not(#bsl-print-clone) {
+                display: none !important;
+            }
+            #bsl-print-clone, #bsl-print-clone * {
+                visibility: visible !important;
+            }
+            #bsl-print-clone {
+                display: block !important;
+                position: static !important;
+                margin: 0 !important;
+                padding: 15mm !important;
+                background: #fff !important;
+            }
+            #bsl-print-clone .bsl-scroll-table { max-height: none !important; overflow: visible !important; }
+            #bsl-print-clone thead th, #bsl-print-clone th[style*="sticky"], #bsl-print-clone .sticky {
+                position: static !important; top: auto !important;
+            }
+        }
+    `;
     document.head.appendChild(styleEl);
-
-    document.body.classList.add(bodyClass);
+    document.body.classList.add('bsl-print-clone-mode');
 
     let cleaned = false;
     const cleanup = () => {
         if (cleaned) return;
         cleaned = true;
-        document.body.classList.remove(bodyClass);
-        if (wasHidden) el.style.display = 'none';
-        const s = document.getElementById('bsl-temp-print-style');
-        if (s) s.remove();
+        document.body.classList.remove('bsl-print-clone-mode');
+        document.getElementById('bsl-print-clone')?.remove();
+        document.getElementById('bsl-temp-print-style')?.remove();
         window.removeEventListener('afterprint', cleanup);
     };
     window.addEventListener('afterprint', cleanup);
@@ -1483,14 +1507,19 @@ function bslPrintSection(containerId, bodyClass, opts) {
     }, 200);
 }
 
-// Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" ในการ์ด "รายงานครบกำหนดชำระ"
+// Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" ในการ์ด "รายงานครบกำหนดชำระ" — A4 แนวตั้ง
 function exportDebtorSummaryToPDF() {
-    bslPrintSection('debtor-summary-container', 'bsl-print-debtor-only', { orientation: 'landscape' });
+    bslPrintSection('debtor-summary-container', { orientation: 'portrait' });
 }
 
-// Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" ในการ์ดยอด Advance 90%
+// Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" ในการ์ดยอด Advance 90% — A4 แนวตั้ง
 function exportAdvDebtorSummaryToPDF() {
-    bslPrintSection('advance-summary-container', 'bsl-print-adv-debtor-only', { orientation: 'landscape' });
+    bslPrintSection('advance-summary-container', { orientation: 'portrait' });
+}
+
+// Export PDF ตาราง "ข้อมูลเช็ค" — A4 แนวตั้ง
+function exportChequeTableToPDF() {
+    bslPrintSection('cheque-area', { orientation: 'portrait' });
 }
 
 /* =====================================================================
@@ -1936,6 +1965,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // ปุ่ม Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" ในการ์ดยอด Advance 90%
     const btnExportAdvDebtorSummaryPDF = document.getElementById('btnExportAdvDebtorSummaryPDF');
     if (btnExportAdvDebtorSummaryPDF) btnExportAdvDebtorSummaryPDF.addEventListener('click', exportAdvDebtorSummaryToPDF);
+
+    // ปุ่ม Export PDF ตาราง "ข้อมูลเช็ค"
+    const btnExportChequePDF = document.getElementById('btnExportChequePDF');
+    if (btnExportChequePDF) btnExportChequePDF.addEventListener('click', exportChequeTableToPDF);
 
     // ปฏิทินเลือกวันที่ (ตารางข้อมูลเช็คไม่ผ่าน) — วันที่หน้าเช็ค + วันที่เลื่อนเช็ค แยกกัน
     createDueDateCalendarFilter('chq-face', chequeFaceDateFilter, renderChequeTable, getChequeFaceDatesWithData);
@@ -2575,11 +2608,14 @@ function renderChequeTable() {
             return matchesStatus && matchesFace && matchesDefer;
         });
 
-    // เรียงตามเลขที่เช็ค จากน้อยไปหามาก
+    // เรียงตามวันที่หน้าเช็ค จากเก่าไปใหม่ (แถวที่ไม่มีวันที่หน้าเช็คจะไปอยู่ท้ายสุด)
     rows.sort((a, b) => {
-        const na = parseInt(a.chequeNo.replace(/[^0-9]/g, ''), 10);
-        const nb = parseInt(b.chequeNo.replace(/[^0-9]/g, ''), 10);
-        if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb;
+        const da = dateKeyOf(a.faceDate);
+        const db = dateKeyOf(b.faceDate);
+        if (!da && !db) return a.chequeNo.localeCompare(b.chequeNo, undefined, { numeric: true });
+        if (!da) return 1;
+        if (!db) return -1;
+        if (da !== db) return da < db ? -1 : 1;
         return a.chequeNo.localeCompare(b.chequeNo, undefined, { numeric: true });
     });
 
