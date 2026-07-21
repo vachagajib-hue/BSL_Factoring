@@ -1460,6 +1460,11 @@ function bslPrintSection(containerId, opts) {
     }
 
     const orientation = (opts && opts.orientation) || 'portrait';
+    // hideColumns: [{ scopeId: 'advance-table-wrapper', indices: [7] }, ...] ซ่อนบางคอลัมน์เฉพาะตารางที่ระบุ (nth-child)
+    const hideColumns = (opts && opts.hideColumns) || [];
+    // headerNote: string หรือ function ที่คืนค่า string — ข้อความสรุป (เช่น สถานะตามตัวกรอง) แสดงเหนือตารางที่พิมพ์
+    const headerNoteRaw = opts && opts.headerNote;
+    const headerNote = (typeof headerNoteRaw === 'function') ? headerNoteRaw() : (headerNoteRaw || '');
 
     // ล้างของเก่าที่อาจค้างจากครั้งก่อน (เผื่อ cleanup รอบก่อนไม่สำเร็จ)
     document.getElementById('bsl-print-clone')?.remove();
@@ -1469,7 +1474,18 @@ function bslPrintSection(containerId, opts) {
     const printBox = document.createElement('div');
     printBox.id = 'bsl-print-clone';
     printBox.innerHTML = src.innerHTML;
+    if (headerNote) {
+        printBox.insertAdjacentHTML('afterbegin', `<div class="bsl-print-note" style="font-size:12px;font-weight:700;color:#334155;margin-bottom:10px;">${headerNote}</div>`);
+    }
     document.body.appendChild(printBox);
+
+    const hideColumnsCSS = hideColumns.map(({ scopeId, indices }) => (indices || []).map(n => `
+            #bsl-print-clone #${scopeId} th:nth-child(${n}),
+            #bsl-print-clone #${scopeId} td:nth-child(${n}),
+            #bsl-print-clone #${scopeId} colgroup col:nth-child(${n}) {
+                display: none !important;
+            }
+    `).join('\n')).join('\n');
 
     const styleEl = document.createElement('style');
     styleEl.id = 'bsl-temp-print-style';
@@ -1493,6 +1509,20 @@ function bslPrintSection(containerId, opts) {
             #bsl-print-clone thead th, #bsl-print-clone th[style*="sticky"], #bsl-print-clone .sticky {
                 position: static !important; top: auto !important;
             }
+            /* จัดตารางให้เหมาะกับหน้ากระดาษ: เลิกบังคับความกว้าง % แบบหน้าจอกว้าง ให้ auto ตามเนื้อหา + ตัดคำได้ */
+            #bsl-print-clone table {
+                width: 100% !important;
+                table-layout: auto !important;
+                border-collapse: collapse !important;
+            }
+            #bsl-print-clone th, #bsl-print-clone td {
+                white-space: normal !important;
+                word-break: break-word !important;
+                font-size: 9px !important;
+                padding: 4px 5px !important;
+                line-height: 1.3 !important;
+            }
+            ${hideColumnsCSS}
         }
     `;
     document.head.appendChild(styleEl);
@@ -1525,9 +1555,22 @@ function exportAdvDebtorSummaryToPDF() {
     bslPrintSection('advance-summary-container', { orientation: 'portrait' });
 }
 
+// สร้างข้อความสรุปสถานะตามตัวกรองที่เลือกอยู่ ณ ขณะนั้น (แสดงแทนคอลัมน์ "สถานะ" ในรายงาน PDF)
+function bslStatusFilterNote(selectedSet, uniqueList) {
+    const total = uniqueList.length;
+    if (selectedSet.size === 0) return 'สถานะ: ไม่มีการเลือก';
+    if (selectedSet.size === total) return 'สถานะ: ทั้งหมด';
+    return `สถานะ: ${Array.from(selectedSet).join(', ')}`;
+}
+
 // Export PDF ตาราง "ยอด Advance 90%" ทั้งการ์ด (ตารางรายการ + สรุปยอดตามลูกหนี้) — A4 แนวตั้ง
+// ซ่อนคอลัมน์ "สถานะ" ในตารางรายการ แล้วโชว์สถานะตามตัวกรองไว้ที่หัวรายงานแทน
 function exportAdvanceTableToPDF() {
-    bslPrintSection('advance-table-area', { orientation: 'portrait' });
+    bslPrintSection('advance-table-area', {
+        orientation: 'portrait',
+        hideColumns: [{ scopeId: 'advance-table-wrapper', indices: [7] }],
+        headerNote: () => bslStatusFilterNote(advSelectedStatuses, advUniqueStatusList)
+    });
 }
 
 // Export PDF ตาราง "ข้อมูลเช็ค" — A4 แนวตั้ง
