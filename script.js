@@ -1525,6 +1525,11 @@ function exportAdvDebtorSummaryToPDF() {
     bslPrintSection('advance-summary-container', { orientation: 'portrait' });
 }
 
+// Export PDF ตาราง "ยอด Advance 90%" ทั้งการ์ด (ตารางรายการ + สรุปยอดตามลูกหนี้) — A4 แนวตั้ง
+function exportAdvanceTableToPDF() {
+    bslPrintSection('advance-table-area', { orientation: 'portrait' });
+}
+
 // Export PDF ตาราง "ข้อมูลเช็ค" — A4 แนวตั้ง
 function exportChequeTableToPDF() {
     bslPrintSection('cheque-area', { orientation: 'portrait' });
@@ -1973,6 +1978,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // ปุ่ม Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" ในการ์ดยอด Advance 90%
     const btnExportAdvDebtorSummaryPDF = document.getElementById('btnExportAdvDebtorSummaryPDF');
     if (btnExportAdvDebtorSummaryPDF) btnExportAdvDebtorSummaryPDF.addEventListener('click', exportAdvDebtorSummaryToPDF);
+
+    // ปุ่ม Export PDF ตาราง "ยอด Advance 90%" ทั้งการ์ด
+    const btnExportAdvanceTablePDF = document.getElementById('btnExportAdvanceTablePDF');
+    if (btnExportAdvanceTablePDF) btnExportAdvanceTablePDF.addEventListener('click', exportAdvanceTableToPDF);
 
     // ปุ่ม Export PDF ตาราง "ข้อมูลเช็ค"
     const btnExportChequePDF = document.getElementById('btnExportChequePDF');
