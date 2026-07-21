@@ -23,6 +23,10 @@ let advUniqueYearsList = [];
 let mainDueDateFilter = new Set();
 let debtorDueDateFilter = new Set(); // ปฏิทินตัวกรองวันที่ครบกำหนด เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)"
 let advDebtorDueDateFilter = new Set(); // ปฏิทินตัวกรองวันที่ครบกำหนด เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" ในการ์ดยอด Advance 90%
+let debtorSelectedMonths = new Set(); // ตัวกรองเดือน เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)"
+let debtorUniqueMonthsList = [];
+let debtorSelectedYears = new Set(); // ตัวกรองปี เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)"
+let debtorUniqueYearsList = [];
 let advDueDateFilter = new Set();
 
 const KPI_DATA = [
@@ -278,6 +282,7 @@ function processRealData(summary, details) {
         
         // กรองและแสดงตารางครั้งแรก
         populateFilters(details.data);
+        populateDebtorPivotFilters(details.data);
         applyTableFilter();
         populateAdvanceFilters(details.data);
         applyAdvanceFilter();
@@ -1315,12 +1320,15 @@ function renderTable(data) {
         const pivotByDebtor = {};
         let grandTotal = 0;
 
-        // กรองด้วยปฏิทิน "วันที่ครบกำหนด" เฉพาะตารางนี้ (ไม่กระทบตารางรายการดิบด้านบน)
-        const pivotSourceData = (debtorDueDateFilter.size === 0) ? validData : validData.filter(r => {
+        // กรองด้วยปฏิทิน "วันที่ครบกำหนด" + ตัวกรองเดือน/ปี เฉพาะตารางนี้ (ไม่กระทบตารางรายการดิบด้านบน)
+        const pivotSourceData = validData.filter(r => {
             const parts = (r.c || '').split('/'); // DD/MM/YYYY
             if (parts.length !== 3) return false;
-            const key = `${parts[2]}-${parts[1]}-${parts[0]}`;
-            return debtorDueDateFilter.has(key);
+            const [dd, mm, yyyy] = parts;
+            const matchesDate = debtorDueDateFilter.size === 0 || debtorDueDateFilter.has(`${yyyy}-${mm}-${dd}`);
+            const matchesMonth = debtorSelectedMonths.size === 0 || debtorSelectedMonths.has(mm);
+            const matchesYear = debtorSelectedYears.size === 0 || debtorSelectedYears.has(yyyy);
+            return matchesDate && matchesMonth && matchesYear;
         });
 
         pivotSourceData.forEach(r => {
@@ -1507,9 +1515,9 @@ function bslPrintSection(containerId, opts) {
     }, 200);
 }
 
-// Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" ในการ์ด "รายงานครบกำหนดชำระ" — A4 แนวตั้ง
+// Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" ในการ์ด "รายงานครบกำหนดชำระ" — A4 แนวนอน
 function exportDebtorSummaryToPDF() {
-    bslPrintSection('debtor-summary-container', { orientation: 'portrait' });
+    bslPrintSection('debtor-summary-container', { orientation: 'landscape' });
 }
 
 // Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" ในการ์ดยอด Advance 90% — A4 แนวตั้ง
@@ -2670,6 +2678,139 @@ function renderChequeTable() {
 // ปฏิทินเลือกวันที่ครบกำหนด (แบบกะทัดรัด) — ใช้ร่วมกับตัวกรองเดือน/ปี/สถานะเดิม (AND)
 // นำไปใช้กับทั้งตาราง "รายงานครบกำหนดชำระ" (prefix: duedate) และ "ยอด Advance 90%" (prefix: adv-duedate)
 // =====================================================================
+// =====================================================================
+// ตัวกรอง checkbox dropdown ทั่วไป (เดือน/ปี ฯลฯ) — ใช้กับตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)"
+// config: { dropdownId, btnId, arrowId, labelId, values, selectedSet, uniqueListRef, formatLabel, allLabel, onChange }
+// =====================================================================
+function createCheckboxFilterDropdown(config) {
+    const dropdown = document.getElementById(config.dropdownId);
+    if (!dropdown) return;
+
+    config.uniqueListRef.length = 0;
+    config.values.forEach(v => config.uniqueListRef.push(v));
+    config.selectedSet.clear();
+    config.values.forEach(v => config.selectedSet.add(v));
+
+    function updateLabel() {
+        const label = document.getElementById(config.labelId);
+        if (!label) return;
+        const total = config.uniqueListRef.length;
+        if (config.selectedSet.size === 0) label.textContent = `${config.allLabel} (ไม่มีการเลือก)`;
+        else if (config.selectedSet.size === total) label.textContent = `${config.allLabel} (ทั้งหมด)`;
+        else label.textContent = Array.from(config.selectedSet).sort().map(config.formatLabel).join(', ');
+    }
+
+    dropdown.innerHTML = '';
+    const allDiv = document.createElement('div');
+    allDiv.className = 'flex items-center gap-2 pb-2 mb-2 border-b border-slate-100 font-bold text-slate-700';
+    allDiv.innerHTML = `
+        <input type="checkbox" id="${config.dropdownId}-all-chk" class="w-3.5 h-3.5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer" checked>
+        <label for="${config.dropdownId}-all-chk" class="text-xs select-none cursor-pointer">เลือกทั้งหมด</label>
+    `;
+    dropdown.appendChild(allDiv);
+
+    config.values.forEach((v, idx) => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center gap-2 hover:bg-slate-50 p-1 rounded transition-colors';
+        div.innerHTML = `
+            <input type="checkbox" id="${config.dropdownId}-chk-${idx}" value="${v}" class="${config.dropdownId}-chk-item w-3.5 h-3.5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer" checked>
+            <label for="${config.dropdownId}-chk-${idx}" class="text-xs select-none cursor-pointer text-slate-600">${config.formatLabel(v)}</label>
+        `;
+        dropdown.appendChild(div);
+    });
+
+    const allChk = document.getElementById(`${config.dropdownId}-all-chk`);
+    const items = dropdown.querySelectorAll(`.${config.dropdownId}-chk-item`);
+
+    allChk.addEventListener('change', () => {
+        const checked = allChk.checked;
+        items.forEach(chk => {
+            chk.checked = checked;
+            checked ? config.selectedSet.add(chk.value) : config.selectedSet.delete(chk.value);
+        });
+        updateLabel();
+        config.onChange();
+    });
+
+    items.forEach(chk => {
+        chk.addEventListener('change', () => {
+            chk.checked ? config.selectedSet.add(chk.value) : config.selectedSet.delete(chk.value);
+            allChk.checked = Array.from(items).every(i => i.checked);
+            updateLabel();
+            config.onChange();
+        });
+    });
+
+    updateLabel();
+
+    const btn = document.getElementById(config.btnId);
+    const arrow = document.getElementById(config.arrowId);
+    if (btn && dropdown && !btn._bslBound) {
+        btn._bslBound = true;
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isHidden = dropdown.classList.contains('hidden');
+            if (isHidden) {
+                dropdown.classList.remove('hidden');
+                setTimeout(() => {
+                    dropdown.classList.remove('scale-95', 'opacity-0');
+                    dropdown.classList.add('scale-100', 'opacity-100');
+                }, 10);
+                if (arrow) arrow.classList.add('rotate-180');
+            } else {
+                dropdown.classList.remove('scale-100', 'opacity-100');
+                dropdown.classList.add('scale-95', 'opacity-0');
+                if (arrow) arrow.classList.remove('rotate-180');
+                setTimeout(() => dropdown.classList.add('hidden'), 150);
+            }
+        });
+        dropdown.addEventListener('click', e => e.stopPropagation());
+    }
+}
+
+// ตัวกรองเดือน/ปี เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" ในการ์ด "รายงานครบกำหนดชำระ"
+function populateDebtorPivotFilters(data) {
+    const THAI_MONTHS = {
+        '01': 'มกราคม', '02': 'กุมภาพันธ์', '03': 'มีนาคม', '04': 'เมษายน',
+        '05': 'พฤษภาคม', '06': 'มิถุนายน', '07': 'กรกฎาคม', '08': 'สิงหาคม',
+        '09': 'กันยายน', '10': 'ตุลาคม', '11': 'พฤศจิกายน', '12': 'ธันวาคม'
+    };
+    const monthSet = new Set();
+    const yearSet = new Set();
+    data.forEach(row => {
+        if (!isValidDebtorRow(row)) return;
+        const p = parseDateParts(row[DATA1_COL.dueDate]);
+        if (p.m) monthSet.add(p.m);
+        if (p.y) yearSet.add(p.y);
+    });
+
+    createCheckboxFilterDropdown({
+        dropdownId: 'debtor-month-filter-dropdown',
+        btnId: 'debtor-month-filter-btn',
+        arrowId: 'debtor-month-filter-arrow',
+        labelId: 'debtor-month-filter-label',
+        values: Array.from(monthSet).sort(),
+        selectedSet: debtorSelectedMonths,
+        uniqueListRef: debtorUniqueMonthsList,
+        formatLabel: v => THAI_MONTHS[v] || v,
+        allLabel: 'เดือน',
+        onChange: applyTableFilter
+    });
+
+    createCheckboxFilterDropdown({
+        dropdownId: 'debtor-year-filter-dropdown',
+        btnId: 'debtor-year-filter-btn',
+        arrowId: 'debtor-year-filter-arrow',
+        labelId: 'debtor-year-filter-label',
+        values: Array.from(yearSet).sort(),
+        selectedSet: debtorSelectedYears,
+        uniqueListRef: debtorUniqueYearsList,
+        formatLabel: v => v,
+        allLabel: 'ปี',
+        onChange: applyTableFilter
+    });
+}
+
 function createDueDateCalendarFilter(prefix, selectedSet, onChange, getDatesWithDataFn) {
     const getDates = getDatesWithDataFn || bslGetDatesWithData;
     let calYear = new Date().getFullYear();
