@@ -208,3 +208,44 @@ body {
     .bsl-scroll-table { max-height: none !important; overflow: visible !important; }
     thead th, th[style*="sticky"], .sticky { position: static !important; top: auto !important; }
 }
+
+/* ====== Export PDF เฉพาะกล่อง "รายละเอียดลูกหนี้ (แยกตาม TD)" ผ่านระบบ Print ของเบราว์เซอร์ ====== */
+@media print {
+    /* ปุ่ม Export PDF ในการ์ด "รายงานครบกำหนดชำระ" -> พิมพ์เฉพาะ debtor-summary-container */
+    body.bsl-print-debtor-only #table-export-area,
+    body.bsl-print-debtor-only #table-export-area * {
+        visibility: hidden !important;
+    }
+    body.bsl-print-debtor-only #debtor-summary-container,
+    body.bsl-print-debtor-only #debtor-summary-container * {
+        visibility: visible !important;
+    }
+    body.bsl-print-debtor-only #debtor-summary-container {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0 !important;
+        padding: 15mm !important;
+    }
+
+    /* ปุ่ม Export PDF ในการ์ดยอด Advance 90% -> พิมพ์เฉพาะ advance-summary-container */
+    body.bsl-print-adv-debtor-only #advance-table-area,
+    body.bsl-print-adv-debtor-only #advance-table-area * {
+        visibility: hidden !important;
+    }
+    body.bsl-print-adv-debtor-only #advance-summary-container,
+    body.bsl-print-adv-debtor-only #advance-summary-container * {
+        visibility: visible !important;
+    }
+    body.bsl-print-adv-debtor-only #advance-summary-container {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0 !important;
+        padding: 15mm !important;
+    }
+}
