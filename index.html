@@ -537,15 +537,59 @@
 
             <div class="border-t border-slate-100 pt-6 mt-6" id="advance-footer-section">
                 <!-- Pivot Summary -->
-                <div class="flex items-center gap-3 mb-3" data-html2canvas-ignore="true">
-                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">รายละเอียดลูกหนี้ (แยกตาม TD)</span>
-                    <button id="adv-summary-toggle-btn"
-                        class="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1 rounded-md flex items-center gap-1.5 transition-all font-bold text-[10px] uppercase tracking-wider border border-emerald-100">
-                        <svg id="adv-summary-toggle-icon" class="w-3.5 h-3.5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                        </svg>
-                        <span id="adv-summary-toggle-lbl">ซ่อนรายละเอียดลูกหนี้</span>
-                    </button>
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-3" data-html2canvas-ignore="true">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">รายละเอียดลูกหนี้ (แยกตาม TD)</span>
+                        <button id="adv-summary-toggle-btn"
+                            class="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1 rounded-md flex items-center gap-1.5 transition-all font-bold text-[10px] uppercase tracking-wider border border-emerald-100">
+                            <svg id="adv-summary-toggle-icon" class="w-3.5 h-3.5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                            <span id="adv-summary-toggle-lbl">ซ่อนรายละเอียดลูกหนี้</span>
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <!-- ปฏิทินเลือกวันที่ครบกำหนด เฉพาะตารางนี้ -->
+                        <div class="relative inline-block text-left" id="adv-debtor-duedate-filter-wrapper">
+                            <button id="adv-debtor-duedate-filter-btn"
+                                class="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-all focus:outline-none">
+                                <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <span id="adv-debtor-duedate-filter-label">วันที่ครบกำหนด</span>
+                                <svg id="adv-debtor-duedate-filter-arrow" class="w-3 h-3 text-slate-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <div id="adv-debtor-duedate-filter-dropdown"
+                                class="hidden duecal-dropdown absolute right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 p-3 scale-95 opacity-0 transition-all duration-150 origin-top-right">
+                                <div class="duecal-topbar">
+                                    <button class="duecal-nav" id="adv-debtor-duedate-cal-prev" type="button">&lsaquo;</button>
+                                    <select class="duecal-sel" id="adv-debtor-duedate-cal-month-sel"></select>
+                                    <select class="duecal-sel" id="adv-debtor-duedate-cal-year-sel"></select>
+                                    <button class="duecal-nav" id="adv-debtor-duedate-cal-next" type="button">&rsaquo;</button>
+                                </div>
+                                <div class="duecal-actions">
+                                    <button class="duecal-btn sel" id="adv-debtor-duedate-cal-selall" type="button">เลือกทั้งหมด</button>
+                                    <button class="duecal-btn clr" id="adv-debtor-duedate-cal-clear" type="button">ล้าง</button>
+                                </div>
+                                <div class="duecal-weekdays">
+                                    <span>อา</span><span>จ</span><span>อ</span><span>พ</span><span>พฤ</span><span>ศ</span><span>ส</span>
+                                </div>
+                                <div class="duecal-grid" id="adv-debtor-duedate-cal-grid"></div>
+                                <div class="duecal-summary" id="adv-debtor-duedate-cal-summary">ยังไม่ได้เลือกวันที่</div>
+                            </div>
+                        </div>
+                        <!-- ปุ่ม Export PDF เฉพาะตารางนี้ -->
+                        <button id="btnExportAdvDebtorSummaryPDF" data-html2canvas-ignore="true"
+                            class="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-2 rounded-lg flex items-center gap-1.5 transition-all font-bold text-[10px] uppercase tracking-wider border border-emerald-100 shadow-sm">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Export PDF
+                        </button>
+                    </div>
                 </div>
                 <div id="advance-summary-container" class="mb-6 w-full overflow-x-auto bsl-scroll-table"></div>
                 <div class="flex justify-end">
