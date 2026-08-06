@@ -209,43 +209,11 @@ body {
     thead th, th[style*="sticky"], .sticky { position: static !important; top: auto !important; }
 }
 
-/* ====== Export PDF เฉพาะกล่อง "รายละเอียดลูกหนี้ (แยกตาม TD)" ผ่านระบบ Print ของเบราว์เซอร์ ====== */
+/* ====== ตัด "รายละเอียดลูกหนี้ (แยกตาม TD)" ออกจากรายงานหลักของการ์ด "รายงานครบกำหนดชำระ" ======
+   เพราะตารางนี้มีปุ่ม Export PDF แยกเป็นของตัวเอง (จัดเป็นแนวนอนอยู่แล้ว) ถ้าปล่อยให้ติดไปกับตารางรายการดิบ
+   ตอนกด Export PDF ปุ่มบนสุด จะทำให้หัวตาราง/ยอดรวมของ pivot นี้ไปแสดงซ้ำหลายหน้าปนกับตารางรายการดิบ ดูไม่เรียบร้อย */
 @media print {
-    /* ปุ่ม Export PDF ในการ์ด "รายงานครบกำหนดชำระ" -> พิมพ์เฉพาะ debtor-summary-container */
-    body.bsl-print-debtor-only #table-export-area,
-    body.bsl-print-debtor-only #table-export-area * {
-        visibility: hidden !important;
-    }
-    body.bsl-print-debtor-only #debtor-summary-container,
-    body.bsl-print-debtor-only #debtor-summary-container * {
-        visibility: visible !important;
-    }
-    body.bsl-print-debtor-only #debtor-summary-container {
-        display: block !important;
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        margin: 0 !important;
-        padding: 15mm !important;
-    }
-
-    /* ปุ่ม Export PDF ในการ์ดยอด Advance 90% -> พิมพ์เฉพาะ advance-summary-container */
-    body.bsl-print-adv-debtor-only #advance-table-area,
-    body.bsl-print-adv-debtor-only #advance-table-area * {
-        visibility: hidden !important;
-    }
-    body.bsl-print-adv-debtor-only #advance-summary-container,
-    body.bsl-print-adv-debtor-only #advance-summary-container * {
-        visibility: visible !important;
-    }
-    body.bsl-print-adv-debtor-only #advance-summary-container {
-        display: block !important;
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        margin: 0 !important;
-        padding: 15mm !important;
+    #table-export-area #debtor-summary-container {
+        display: none !important;
     }
 }
