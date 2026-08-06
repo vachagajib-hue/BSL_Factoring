@@ -1468,6 +1468,9 @@ function bslPrintSection(containerId, opts) {
     // extraCSS: CSS เพิ่มเติมเฉพาะรายงานนี้เท่านั้น (ผู้เรียกแต่ละฟังก์ชันกำหนดเอง) — เพื่อไม่ให้การปรับแต่ง
     // สำหรับรายงานหนึ่งไปกระทบกับรายงานอื่นที่ใช้ bslPrintSection() ร่วมกัน
     const extraCSS = (opts && opts.extraCSS) || '';
+    // excludeSelectors: ['#advance-summary-container', ...] — ตัดบางส่วนออกจากสิ่งที่ clone มา
+    // (เช่น หัวข้อ/ตารางย่อยที่มีปุ่ม Export PDF แยกเป็นรายงานของตัวเองอยู่แล้ว ไม่ต้องการให้ติดมาปนกัน)
+    const excludeSelectors = (opts && opts.excludeSelectors) || [];
 
     // ล้างของเก่าที่อาจค้างจากครั้งก่อน (เผื่อ cleanup รอบก่อนไม่สำเร็จ)
     document.getElementById('bsl-print-clone')?.remove();
@@ -1477,6 +1480,9 @@ function bslPrintSection(containerId, opts) {
     const printBox = document.createElement('div');
     printBox.id = 'bsl-print-clone';
     printBox.innerHTML = src.innerHTML;
+    excludeSelectors.forEach(sel => {
+        printBox.querySelectorAll(sel).forEach(el => el.remove());
+    });
     if (headerNote) {
         printBox.insertAdjacentHTML('afterbegin', `<div class="bsl-print-note">${headerNote}</div>`);
     }
@@ -1494,7 +1500,9 @@ function bslPrintSection(containerId, opts) {
     styleEl.id = 'bsl-temp-print-style';
     styleEl.textContent = `
         @media print {
-            @page { size: A4 ${orientation}; margin: 0; }
+            /* ใช้ margin ของ @page แทน padding บนตัว div เพราะ padding จะเว้นขอบให้แค่หน้าแรก/หน้าสุดท้าย
+               ส่วน margin ของ @page จะเว้นขอบให้เท่ากันทุกหน้าเวลาพิมพ์หลายหน้า (บน-ล่าง-ซ้าย-ขวาเท่ากัน) */
+            @page { size: A4 ${orientation}; margin: 15mm; }
             body.bsl-print-clone-mode > *:not(#bsl-print-clone) {
                 display: none !important;
             }
@@ -1505,7 +1513,7 @@ function bslPrintSection(containerId, opts) {
                 display: block !important;
                 position: static !important;
                 margin: 0 !important;
-                padding: 15mm !important;
+                padding: 0 !important;
                 background: #fff !important;
             }
             #bsl-print-clone .bsl-scroll-table { max-height: none !important; overflow: visible !important; }
@@ -1619,12 +1627,15 @@ function bslReportHeaderHTML(subtitle) {
     `;
 }
 
-// Export PDF ตาราง "ยอด Advance 90%" ทั้งการ์ด (ตารางรายการ + สรุปยอดตามลูกหนี้) — A4 แนวตั้ง
+// Export PDF ตาราง "ยอด Advance 90%" (ตารางรายการ + ยอดรวม) — A4 แนวตั้ง
+// ตัดหัวข้อเดิมบนหน้าจอ (ซ้ำกับหัวรายงานที่แต่งใหม่) และตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" ออก
+// เพราะมีรายงานแยกของตัวเอง (exportAdvDebtorSummaryToPDF, แนวนอน) — รวมกันแล้วข้อมูลจะมาไม่ครบ
 // ซ่อนคอลัมน์ "สถานะ" ในตารางรายการ แล้วโชว์สถานะตามตัวกรองไว้ที่หัวรายงานแทน
 function exportAdvanceTableToPDF() {
     bslPrintSection('advance-table-area', {
         orientation: 'portrait',
         hideColumns: [{ scopeId: 'advance-table-wrapper', indices: [7] }],
+        excludeSelectors: ['#advance-table-header-row', '#advance-summary-container'],
         headerNote: () => bslReportHeaderHTML('ยอด Advance 90%')
             + `<div style="text-align:center;font-size:11px;font-weight:700;color:#334155;margin-bottom:10px;">${bslStatusFilterNote(advSelectedStatuses, advUniqueStatusList)}</div>`
     });
@@ -1633,8 +1644,10 @@ function exportAdvanceTableToPDF() {
 // Export PDF ตาราง "ข้อมูลเช็ค" — A4 แนวนอน
 function exportChequeTableToPDF() {
     // ตารางนี้มีคอลัมน์เยอะ (9 คอลัมน์) ใช้แนวนอนเพื่อให้แต่ละแถวพอดี 1 บรรทัด ไม่ล้นจนต้องตัดคำ
+    // ตัดหัวข้อเดิมบนหน้าจอออก เพราะซ้ำกับหัวรายงานที่แต่งใหม่
     bslPrintSection('cheque-area', {
         orientation: 'landscape',
+        excludeSelectors: ['#cheque-header-row'],
         headerNote: () => bslReportHeaderHTML('ข้อมูลเช็ค')
     });
 }
