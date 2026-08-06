@@ -1478,7 +1478,7 @@ function bslPrintSection(containerId, opts) {
     printBox.id = 'bsl-print-clone';
     printBox.innerHTML = src.innerHTML;
     if (headerNote) {
-        printBox.insertAdjacentHTML('afterbegin', `<div class="bsl-print-note" style="font-size:12px;font-weight:700;color:#334155;margin-bottom:10px;">${headerNote}</div>`);
+        printBox.insertAdjacentHTML('afterbegin', `<div class="bsl-print-note">${headerNote}</div>`);
     }
     document.body.appendChild(printBox);
 
@@ -1574,18 +1574,21 @@ const BSL_PIVOT_FIRST_COL_PRINT_CSS = `
 `;
 
 // Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" ในการ์ด "รายงานครบกำหนดชำระ" — A4 แนวนอน
+// แยกเป็นรายงานของตัวเอง ไม่รวมกับตารางรายการดิบด้านบน (ดูการตัดออกจากรายงานหลักที่ style.css)
 function exportDebtorSummaryToPDF() {
     bslPrintSection('debtor-summary-container', {
         orientation: 'landscape',
-        extraCSS: BSL_PIVOT_FIRST_COL_PRINT_CSS
+        extraCSS: BSL_PIVOT_FIRST_COL_PRINT_CSS,
+        headerNote: () => bslReportHeaderHTML('รายละเอียดลูกหนี้ (แยกตาม TD) — รายงานครบกำหนดชำระ')
     });
 }
 
-// Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" ในการ์ดยอด Advance 90% — A4 แนวตั้ง
+// Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" ในการ์ดยอด Advance 90% — A4 แนวนอน
 function exportAdvDebtorSummaryToPDF() {
     bslPrintSection('advance-summary-container', {
-        orientation: 'portrait',
-        extraCSS: BSL_PIVOT_FIRST_COL_PRINT_CSS
+        orientation: 'landscape',
+        extraCSS: BSL_PIVOT_FIRST_COL_PRINT_CSS,
+        headerNote: () => bslReportHeaderHTML('รายละเอียดลูกหนี้ (แยกตาม TD) — ยอด Advance 90%')
     });
 }
 
@@ -1597,20 +1600,43 @@ function bslStatusFilterNote(selectedSet, uniqueList) {
     return `สถานะ: ${Array.from(selectedSet).join(', ')}`;
 }
 
+// วันที่ปัจจุบันแบบไทย (ปี พ.ศ.) — ใช้แสดงที่หัวกระดาษของรายงาน PDF แต่ละใบ
+function bslThaiDateNow() {
+    const THAI_MONTHS_FULL = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+        'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+    const now = new Date();
+    return `${now.getDate()} ${THAI_MONTHS_FULL[now.getMonth()]} ${now.getFullYear() + 543}`;
+}
+
+// หัวกระดาษมาตรฐานสำหรับรายงาน PDF ที่ Export แยกเป็นใบของตัวเอง — ชื่อบริษัท + ชื่อรายงาน + วันที่ออกรายงาน
+function bslReportHeaderHTML(subtitle) {
+    return `
+        <div style="text-align:center;margin-bottom:16px;border-bottom:2px solid #4f46e5;padding-bottom:12px;">
+            <div style="font-size:18px;font-weight:900;color:#1e293b;letter-spacing:-0.02em;text-transform:uppercase;">BSL Factoring Dashboard</div>
+            <div style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:0.2em;text-transform:uppercase;margin-top:4px;">${subtitle}</div>
+            <div style="font-size:10px;color:#64748b;margin-top:6px;">วันที่ออกรายงาน: ${bslThaiDateNow()}</div>
+        </div>
+    `;
+}
+
 // Export PDF ตาราง "ยอด Advance 90%" ทั้งการ์ด (ตารางรายการ + สรุปยอดตามลูกหนี้) — A4 แนวตั้ง
 // ซ่อนคอลัมน์ "สถานะ" ในตารางรายการ แล้วโชว์สถานะตามตัวกรองไว้ที่หัวรายงานแทน
 function exportAdvanceTableToPDF() {
     bslPrintSection('advance-table-area', {
         orientation: 'portrait',
         hideColumns: [{ scopeId: 'advance-table-wrapper', indices: [7] }],
-        headerNote: () => bslStatusFilterNote(advSelectedStatuses, advUniqueStatusList)
+        headerNote: () => bslReportHeaderHTML('ยอด Advance 90%')
+            + `<div style="text-align:center;font-size:11px;font-weight:700;color:#334155;margin-bottom:10px;">${bslStatusFilterNote(advSelectedStatuses, advUniqueStatusList)}</div>`
     });
 }
 
 // Export PDF ตาราง "ข้อมูลเช็ค" — A4 แนวนอน
 function exportChequeTableToPDF() {
     // ตารางนี้มีคอลัมน์เยอะ (9 คอลัมน์) ใช้แนวนอนเพื่อให้แต่ละแถวพอดี 1 บรรทัด ไม่ล้นจนต้องตัดคำ
-    bslPrintSection('cheque-area', { orientation: 'landscape' });
+    bslPrintSection('cheque-area', {
+        orientation: 'landscape',
+        headerNote: () => bslReportHeaderHTML('ข้อมูลเช็ค')
+    });
 }
 
 /* =====================================================================
