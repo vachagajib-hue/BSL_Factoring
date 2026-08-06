@@ -1465,6 +1465,9 @@ function bslPrintSection(containerId, opts) {
     // headerNote: string หรือ function ที่คืนค่า string — ข้อความสรุป (เช่น สถานะตามตัวกรอง) แสดงเหนือตารางที่พิมพ์
     const headerNoteRaw = opts && opts.headerNote;
     const headerNote = (typeof headerNoteRaw === 'function') ? headerNoteRaw() : (headerNoteRaw || '');
+    // extraCSS: CSS เพิ่มเติมเฉพาะรายงานนี้เท่านั้น (ผู้เรียกแต่ละฟังก์ชันกำหนดเอง) — เพื่อไม่ให้การปรับแต่ง
+    // สำหรับรายงานหนึ่งไปกระทบกับรายงานอื่นที่ใช้ bslPrintSection() ร่วมกัน
+    const extraCSS = (opts && opts.extraCSS) || '';
 
     // ล้างของเก่าที่อาจค้างจากครั้งก่อน (เผื่อ cleanup รอบก่อนไม่สำเร็จ)
     document.getElementById('bsl-print-clone')?.remove();
@@ -1523,14 +1526,8 @@ function bslPrintSection(containerId, opts) {
                 padding: 4px 5px !important;
                 line-height: 1.3 !important;
             }
-            /* คอลัมน์แรกของตาราง pivot (รายละเอียดลูกหนี้แยกตาม TD) ถูกกำหนด min-width 260-280px ไว้สำหรับหน้าจอกว้าง
-               ทำให้รวมกับคอลัมน์วันที่จำนวนมากแล้วกว้างเกินหน้ากระดาษจนข้อมูลบางคอลัมน์ถูกตัดหายไปตอน Export
-               จึงลดลงเหลือขนาดพอดี (ไม่ใช่ 0 เพราะจะทำให้ layout ตารางซ้อนภายในคอลัมน์นี้พังจนตัวอักษรตกบรรทัดทีละตัว) */
-            #bsl-print-clone [style*="min-width:280px"],
-            #bsl-print-clone [style*="min-width:260px"] {
-                min-width: 150px !important;
-            }
             ${hideColumnsCSS}
+            ${extraCSS}
         }
     `;
     document.head.appendChild(styleEl);
@@ -1553,14 +1550,43 @@ function bslPrintSection(containerId, opts) {
     }, 200);
 }
 
+// CSS เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" (ใช้ทั้งการ์ด "รายงานครบกำหนดชำระ" และ "ยอด Advance 90%" เพราะโครงสร้างเหมือนกัน)
+// คอลัมน์แรกมี min-width 260-280px + ภายในแบ่ง "เลข TD" (fixed 120px) กับ "รายละเอียด" ไว้คนละคอลัมน์แนวนอน
+// เมื่อลด min-width คอลัมน์นอกแต่ในยังบีบ 120px คงที่ ทำให้ส่วนรายละเอียดเหลือที่ไม่พอ ตัวอักษรเลยตกบรรทัดทีละตัว
+// จึงเปลี่ยนให้ "เลข TD" กับ "รายละเอียด" เรียงต่อกันในแนวตั้งแทนแนวนอนเฉพาะตอนพิมพ์ ใช้พื้นที่แนวนอนน้อยลง เหลือพื้นที่ให้คอลัมน์วันที่ที่มีจำนวนมาก
+// ไม่ใส่ไว้ใน bslPrintSection() ตรงๆ เพราะ CSS นี้เข้ากับโครงสร้างตาราง pivot นี้เท่านั้น ไม่เกี่ยวกับตาราง "ข้อมูลเช็ค" หรือ "ยอด Advance 90%" (ตารางรายการดิบ)
+// การแก้/ปรับ CSS นี้ในอนาคตจะกระทบแค่ 2 รายงานนี้ ไม่กระทบรายงานอื่น
+const BSL_PIVOT_FIRST_COL_PRINT_CSS = `
+    #bsl-print-clone [style*="min-width:280px"],
+    #bsl-print-clone [style*="min-width:260px"] {
+        min-width: 100px !important;
+        max-width: 130px !important;
+    }
+    #bsl-print-clone table td:first-child div[style*="display:table"] {
+        display: block !important;
+    }
+    #bsl-print-clone table td:first-child div[style*="display:table"] > span {
+        display: block !important;
+        width: auto !important;
+        padding-right: 0 !important;
+        margin-bottom: 2px;
+    }
+`;
+
 // Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" ในการ์ด "รายงานครบกำหนดชำระ" — A4 แนวนอน
 function exportDebtorSummaryToPDF() {
-    bslPrintSection('debtor-summary-container', { orientation: 'landscape' });
+    bslPrintSection('debtor-summary-container', {
+        orientation: 'landscape',
+        extraCSS: BSL_PIVOT_FIRST_COL_PRINT_CSS
+    });
 }
 
 // Export PDF เฉพาะตาราง "รายละเอียดลูกหนี้ (แยกตาม TD)" ในการ์ดยอด Advance 90% — A4 แนวตั้ง
 function exportAdvDebtorSummaryToPDF() {
-    bslPrintSection('advance-summary-container', { orientation: 'portrait' });
+    bslPrintSection('advance-summary-container', {
+        orientation: 'portrait',
+        extraCSS: BSL_PIVOT_FIRST_COL_PRINT_CSS
+    });
 }
 
 // สร้างข้อความสรุปสถานะตามตัวกรองที่เลือกอยู่ ณ ขณะนั้น (แสดงแทนคอลัมน์ "สถานะ" ในรายงาน PDF)
