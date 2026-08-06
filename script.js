@@ -1523,6 +1523,15 @@ function bslPrintSection(containerId, opts) {
                 padding: 4px 5px !important;
                 line-height: 1.3 !important;
             }
+            /* คอลัมน์แรกของตาราง pivot (รายละเอียดลูกหนี้แยกตาม TD) ถูกกำหนด min-width 260-280px ไว้สำหรับหน้าจอกว้าง
+               ทำให้รวมกับคอลัมน์วันที่จำนวนมากแล้วกว้างเกินหน้ากระดาษจนข้อมูลบางคอลัมน์ถูกตัดหายไปตอน Export
+               จึงต้องยกเลิก min-width นี้ตอนพิมพ์ เพื่อให้ทุกคอลัมน์ยังอยู่ในหน้าเดียวครบ */
+            #bsl-print-clone [style*="min-width"] {
+                min-width: 0 !important;
+            }
+            #bsl-print-clone table td:first-child > div[style*="width:100%"] {
+                width: auto !important;
+            }
             ${hideColumnsCSS}
         }
     `;
