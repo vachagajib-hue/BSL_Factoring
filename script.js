@@ -1110,17 +1110,21 @@ function renderAdvanceTable(data) {
             grandTotal += amt;
         });
 
-        const sortedDates = Array.from(dateSet).sort((a, b) => {
-            const toNum = s => { const p = s.split('/'); return parseInt((p[2]||'0')+(p[1]||'00').padStart(2,'0')+(p[0]||'00').padStart(2,'0'),10); };
-            return toNum(a) - toNum(b);
-        });
-
+        // คำนวณยอดรวมของแต่ละวันที่ก่อน (จากทุกวันที่ที่มีข้อมูล ยังไม่กรอง/เรียง)
         const dateTotals = {};
-        sortedDates.forEach(d => {
+        Array.from(dateSet).forEach(d => {
             dateTotals[d] = debtorOrder.reduce((sum, name) => {
                 return sum + (pivotByDebtor[name] || []).reduce((s, e) => s + (e.dateAmts[d] || 0), 0);
             }, 0);
         });
+
+        // ตัดคอลัมน์วันที่ที่ยอดรวมเป็น 0 ออก เพื่อเหลือพื้นที่ให้วันที่ที่มีข้อมูลจริงแสดงได้ครบ (สำคัญมากตอน Export PDF ที่มีพื้นที่จำกัด)
+        const sortedDates = Array.from(dateSet)
+            .filter(d => Math.abs(dateTotals[d]) > 0.005)
+            .sort((a, b) => {
+                const toNum = s => { const p = s.split('/'); return parseInt((p[2]||'0')+(p[1]||'00').padStart(2,'0')+(p[0]||'00').padStart(2,'0'),10); };
+                return toNum(a) - toNum(b);
+            });
 
         const dateThs = sortedDates.map(d =>
             `<th class="p-2 border border-indigo-500 text-center whitespace-nowrap sticky top-0 z-20" style="background:#4f46e5;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${d}</th>`
@@ -1344,17 +1348,21 @@ function renderTable(data) {
             grandTotal += amt;
         });
 
-        const sortedDates = Array.from(dateSet).sort((a, b) => {
-            const toNum = s => { const p = s.split('/'); return parseInt((p[2]||'0')+(p[1]||'00').padStart(2,'0')+(p[0]||'00').padStart(2,'0'),10); };
-            return toNum(a) - toNum(b);
-        });
-
+        // คำนวณยอดรวมของแต่ละวันที่ก่อน (จากทุกวันที่ที่มีข้อมูล ยังไม่กรอง/เรียง)
         const dateTotals = {};
-        sortedDates.forEach(d => {
+        Array.from(dateSet).forEach(d => {
             dateTotals[d] = debtorOrder.reduce((sum, name) => {
                 return sum + (pivotByDebtor[name] || []).reduce((s, e) => s + (e.dateAmts[d] || 0), 0);
             }, 0);
         });
+
+        // ตัดคอลัมน์วันที่ที่ยอดรวมเป็น 0 ออก เพื่อเหลือพื้นที่ให้วันที่ที่มีข้อมูลจริงแสดงได้ครบ (สำคัญมากตอน Export PDF ที่มีพื้นที่จำกัด)
+        const sortedDates = Array.from(dateSet)
+            .filter(d => Math.abs(dateTotals[d]) > 0.005)
+            .sort((a, b) => {
+                const toNum = s => { const p = s.split('/'); return parseInt((p[2]||'0')+(p[1]||'00').padStart(2,'0')+(p[0]||'00').padStart(2,'0'),10); };
+                return toNum(a) - toNum(b);
+            });
 
         const dateThs = sortedDates.map(d =>
             `<th class="p-2 border border-indigo-500 text-center whitespace-nowrap sticky top-0 z-20" style="background:#4f46e5;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${d}</th>`
