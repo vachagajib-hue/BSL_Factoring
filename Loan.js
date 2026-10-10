@@ -444,8 +444,10 @@ function loanShowPage(id) {
         tab.setAttribute('aria-selected', on ? 'true' : 'false');
     });
     // ปุ่มเฉพาะหน้า 1
-    const daily = document.getElementById('btnDailyPDF');
-    if (daily) daily.classList.toggle('hidden', id !== 'page1');
+    ['btnDailyPDF', 'btnToggleDetailTables'].forEach(bid => {
+        const b = document.getElementById(bid);
+        if (b) b.classList.toggle('hidden', id !== 'page1');
+    });
     // หน้า 2 เป็นหน้าเริ่มต้น — ลิงก์ตรงไปหน้า 1 ใช้ #overview
     if (history.replaceState) history.replaceState(null, '', id === 'page1' ? '#overview' : location.pathname + location.search);
     if (id === 'page2') { if (loanChartCover) loanChartCover.resize(); if (loanChartAging) loanChartAging.resize(); }
