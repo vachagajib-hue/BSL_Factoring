@@ -21,6 +21,32 @@ const LOAN_STATUS_CLASS = {
 let LOAN = null;                 // ผลคำนวณทั้งหมดของหน้า 2
 let loanChartCover = null, loanChartAging = null;
 
+
+/* ---------------------------------------------------------------------
+   รับข้อมูลโดยไม่ต้องแก้ script.js:
+   ดักผลลัพธ์จาก fetch ที่ script.js เรียก Apps Script อยู่แล้ว (ไม่ยิง request ซ้ำ)
+   --------------------------------------------------------------------- */
+let LOAN_INITED = false;
+(function loanHookFetch() {
+    if (!window.fetch || window.__loanFetchHooked) return;
+    window.__loanFetchHooked = true;
+    const origFetch = window.fetch.bind(window);
+    window.fetch = function (input, init) {
+        const url = typeof input === 'string' ? input : (input && input.url) || '';
+        const p = origFetch(input, init);
+        if (url.indexOf('script.google.com/macros') !== -1) {
+            p.then(r => r.clone().json())
+             .then(res => {
+                 if (LOAN_INITED) return;
+                 if (res && res.status === 'success') initLoanPage(res.bsl);
+                 else initLoanPage(null, (res && res.message) || 'Apps Script ส่งข้อมูลกลับมาไม่ถูกต้อง');
+             })
+             .catch(err => { if (!LOAN_INITED) initLoanPage(null, 'เชื่อมต่อ Google Sheets ไม่สำเร็จ (' + err + ')'); });
+        }
+        return p;
+    };
+})();
+
 // ---------------- Helpers ----------------
 function loanEsc(v) {
     return String(v === null || v === undefined ? '' : v)
@@ -126,13 +152,19 @@ function initLoanPage(bsl, errMsg) {
     const empty = document.getElementById('loan-empty');
     const content = document.getElementById('loan-content');
     if (!asof) return;
+    if (LOAN_INITED && bsl === undefined) return;   // กันการเรียกซ้ำ
+    LOAN_INITED = true;
+    content.classList.remove('hidden');
+    empty.classList.add('hidden');
 
     if (!bsl || !bsl.found) {
         content.classList.add('hidden');
         empty.classList.remove('hidden');
         empty.innerHTML = errMsg
             ? `โหลดข้อมูลไม่สำเร็จ: ${loanEsc(errMsg)}`
-            : `ไม่พบชีต <b>BSL_รายการรับเงิน</b> หรือ <b>BSL_จ่ายBSL</b> ใน Google Sheet — นำเข้าไฟล์ BSL_Factoring_Tracker.xlsx (เลือก "แทรกชีตใหม่") แล้วกด Deploy Apps Script เวอร์ชันใหม่`;
+            : (bsl === undefined
+                ? `Apps Script ยังเป็นเวอร์ชันเก่า (ไม่มีข้อมูลหน้า Loan) — วาง Code.gs ใหม่ แล้วกด <b>Deploy → จัดการการทำให้ใช้งานได้ → แก้ไข → เวอร์ชันใหม่</b>`
+                : `ไม่พบชีต <b>BSL_รายการรับเงิน</b> หรือ <b>BSL_จ่ายBSL</b> ใน Google Sheet — นำเข้าไฟล์ BSL_Factoring_Tracker.xlsx (เลือก "แทรกชีตใหม่")`);
         asof.textContent = 'ไม่มีข้อมูล';
         return;
     }
@@ -504,6 +536,18 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelector(`.bsl-tab[data-page="${next}"]`).focus();
         });
     });
+    // แจ้งเมื่อ Google Sheets ตอบช้า
+    const t0 = Date.now();
+    const slowTimer = setInterval(() => {
+        if (LOAN_INITED) { clearInterval(slowTimer); return; }
+        const sec = Math.round((Date.now() - t0) / 1000);
+        const el = document.getElementById('loan-asof');
+        if (el && sec >= 8) el.textContent = `กำลังโหลดข้อมูลจาก Google Sheets… (${sec} วินาที)`;
+        if (sec >= 60) {
+            clearInterval(slowTimer);
+            initLoanPage(null, 'Google Sheets ไม่ตอบกลับภายใน 60 วินาที — กด F5 เพื่อลองใหม่');
+        }
+    }, 1000);
     const btn = document.getElementById('btnLoanPDF');
     if (btn) btn.addEventListener('click', loanGeneratePDF);
     // หน้าเริ่มต้น = หน้า 2 (รายงานข้อมูล Factoring (Loan)); เปิดหน้า 1 ตรงได้ด้วย #overview
