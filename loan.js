@@ -8,6 +8,8 @@
 const LOAN_TX = { cycle: 1, debtor: 2, desc: 3, workMonth: 4, due: 5, invoice: 6, postpone: 7,
                   recvDate: 10, recvAmt: 11, note: 15 };
 const LOAN_PAY = { cycle: 0, chq: 1, date: 2, amount: 3, note: 4, refundDate: 5, refundAmt: 6 };
+// ส่วนต่างที่รับขาดไม่เกินยอดนี้ ถือเป็นค่าธรรมเนียมที่ถูกหัก → สถานะ "รับแล้ว" (ต้องตรงกับ BSL_Master!E5)
+const LOAN_FEE_TOLERANCE = 1000;
 
 const LOAN_MONTH_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const LOAN_MONTH_FULL = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
@@ -100,7 +102,7 @@ function loanCompute(bsl) {
         let status, late = null;
         if (postpone) status = 'เลื่อนจ่าย';
         else if (invoice === null || !due) status = 'รอข้อมูล';
-        else if (recvDate) status = recvAmt === null ? 'รับแล้ว-รอยืนยันยอด' : (recvAmt < invoice - 0.005 ? 'รับบางส่วน' : 'รับแล้ว');
+        else if (recvDate) status = recvAmt === null ? 'รับแล้ว-รอยืนยันยอด' : (invoice - recvAmt > LOAN_FEE_TOLERANCE ? 'รับบางส่วน' : 'รับแล้ว');
         else status = today > due ? 'เกินกำหนด' : 'รอรับ';
         if (!postpone && due) late = recvDate ? loanDays(recvDate, due) : loanDays(today, due);
         return {
@@ -231,8 +233,14 @@ function renderLoanKpis() {
     const refundPending = LOAN.cycles.reduce((s, c) => s + Math.max(0, c.refundExpected - c.refundReceived), 0);
     const refundUncertain = LOAN.cycles.some(c => c.refundExpected > c.refundReceived && c.outstanding > 0);
     const noData = LOAN.rows.filter(r => r.status === 'รอข้อมูล').length;
+    // ค่างานที่คาดว่าจะได้รับ = ยอดที่ยังไม่มีวันที่เงินเข้า (ไม่นับรายการเลื่อนจ่าย)
+    const pending = LOAN.rows.filter(r => !r.postpone && !r.recvDate && r.invoice !== null && r.expect > 0);
+    const pendingSum = pending.reduce((s, r) => s + r.expect, 0);
+    const nextDue = pending.filter(r => r.due && r.due >= LOAN.today).sort((a, b) => a.due - b.due)[0];
 
     const cards = [
+        { t: 'ค่างานที่คาดว่าจะได้รับ', v: loanMoney(pendingSum), green: pendingSum > 0,
+          n: pending.length ? `${pending.length} รายการ` + (nextDue ? ` รับถัดไป ${loanFmtDate(nextDue.due)}` : '') : 'ไม่มียอดรอรับ' },
         { t: 'ภาระเช็ค BSL คงเหลือ', v: loanMoney(futureSum),
           n: future.length ? `${future.length} ฉบับ ถึง ${loanFmtDate(future[future.length - 1].date)}` : 'ไม่มีเช็คค้างจ่าย' },
         { t: 'ยอดค้างรับเกินกำหนด', v: loanMoney(overdueSum), red: overdueSum > 0,
@@ -242,10 +250,12 @@ function renderLoanKpis() {
         { t: 'รายการรอข้อมูล', v: `${noData} รายการ`, amber: noData > 0,
           n: noData ? 'ต้องกรอกยอดตามใบแจ้งหนี้หรือวันคาดรับ' : 'ข้อมูลครบ' }
     ];
-    document.getElementById('loan-kpis').innerHTML = cards.map(c => `
+    const kpiBox = document.getElementById('loan-kpis');
+    kpiBox.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4';
+    kpiBox.innerHTML = cards.map(c => `
         <div class="loan-kpi">
             <div class="loan-kpi-title">${c.t}</div>
-            <div class="loan-kpi-value" style="${c.red ? 'color:#dc2626' : c.amber ? 'color:#b45309' : ''}">${c.v}</div>
+            <div class="loan-kpi-value" style="${c.red ? 'color:#dc2626' : c.amber ? 'color:#b45309' : c.green ? 'color:#2F5D50' : ''}">${c.v}</div>
             <div class="loan-kpi-note">${loanEsc(c.n)}</div>
         </div>`).join('');
 }
@@ -448,6 +458,9 @@ function loanShowPage(id) {
         const b = document.getElementById(bid);
         if (b) b.classList.toggle('hidden', id !== 'page1');
     });
+    // กล่อง "วงเงินที่ใช้ได้" แสดงเฉพาะหน้า 1 (ใช้ inline style เพราะมีคลาส md:flex)
+    const credit = document.getElementById('usable-credit-container');
+    if (credit) credit.style.display = id === 'page1' ? '' : 'none';
     // หน้า 2 เป็นหน้าเริ่มต้น — ลิงก์ตรงไปหน้า 1 ใช้ #overview
     if (history.replaceState) history.replaceState(null, '', id === 'page1' ? '#overview' : location.pathname + location.search);
     if (id === 'page2') { if (loanChartCover) loanChartCover.resize(); if (loanChartAging) loanChartAging.resize(); }
@@ -494,7 +507,7 @@ function loanGeneratePDF() {
   th { background: #2F5D50; color: #fff; padding: 6px; border: 1px solid #3f7466; }
   td { border: 1px solid #cbd5e1; padding: 5px 7px; } .num { text-align: right; white-space: nowrap; } .ctr { text-align: center; }
   tfoot td { background: #f1f5f9; font-weight: 800; } tr.is-current td { background: #fff7ed; }
-  .kpi td { width: 25%; vertical-align: top; } .k-t { font-size: 10px; color: #64748b; font-weight: 700; }
+  .kpi td { width: 20%; vertical-align: top; } .k-t { font-size: 10px; color: #64748b; font-weight: 700; }
   .k-v { font-size: 16px; font-weight: 800; } .k-n { font-size: 9px; color: #64748b; }
   .loan-badge { font-weight: 700; } ul { margin: 0; padding-left: 18px; font-size: 11px; } li { padding: 2px 0; }
   .chart { text-align: center; } .chart img { max-width: 100%; max-height: 240px; }
