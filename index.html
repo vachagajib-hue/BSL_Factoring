@@ -12,7 +12,7 @@
     <!-- Chart.js Datalabels Plugin -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css?v=4.1">
+    <link rel="stylesheet" href="style.css?v=4.2">
     <!-- html2pdf Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
@@ -886,13 +886,28 @@
                     <h2 class="text-2xl font-bold text-slate-800">รายงานข้อมูล Factoring (Loan)</h2>
                     <p class="text-slate-500 text-sm mt-1" id="loan-asof">กำลังโหลดข้อมูล…</p>
                 </div>
-                <button type="button" id="btnLoanPDF"
-                    class="bg-[#2F5D50] text-white hover:bg-[#244a40] px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm font-bold text-sm">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
-                    </svg>
-                    พิมพ์รายงาน PDF
-                </button>
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- ภาระเช็ค BSL คงเหลือ (ย้ายมาจากแถว KPI) -->
+                    <div id="loan-debt-box" class="loan-debt-box" aria-live="polite">
+                        <div class="loan-debt-icon" aria-hidden="true">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="loan-debt-label">ภาระเช็ค BSL คงเหลือ</p>
+                            <p class="loan-debt-value" id="loan-debt-amount">-</p>
+                            <p class="loan-debt-note" id="loan-debt-note"></p>
+                        </div>
+                    </div>
+                    <button type="button" id="btnLoanPDF"
+                        class="bg-[#2F5D50] text-white hover:bg-[#244a40] px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm font-bold text-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                        </svg>
+                        พิมพ์รายงาน PDF
+                    </button>
+                </div>
             </div>
 
             <!-- ข้อความเมื่อไม่มีข้อมูล -->
@@ -983,7 +998,7 @@
 
     <!-- Custom Script -->
     <script src="script.js?v=4.0"></script>
-    <script src="loan.js?v=1.5"></script>
+    <script src="loan.js?v=1.6"></script>
 </body>
 
 </html>
