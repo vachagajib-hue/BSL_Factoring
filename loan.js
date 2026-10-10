@@ -241,8 +241,6 @@ function renderLoanKpis() {
     const cards = [
         { t: 'ค่างานที่คาดว่าจะได้รับ', v: loanMoney(pendingSum), green: pendingSum > 0,
           n: pending.length ? `${pending.length} รายการ` + (nextDue ? ` รับถัดไป ${loanFmtDate(nextDue.due)}` : '') : 'ไม่มียอดรอรับ' },
-        { t: 'ภาระเช็ค BSL คงเหลือ', v: loanMoney(futureSum),
-          n: future.length ? `${future.length} ฉบับ ถึง ${loanFmtDate(future[future.length - 1].date)}` : 'ไม่มีเช็คค้างจ่าย' },
         { t: 'ยอดค้างรับเกินกำหนด', v: loanMoney(overdueSum), red: overdueSum > 0,
           n: overdue.length ? `${overdue.length} รายการ นานสุด ${maxLate} วัน` : 'ไม่มีรายการเกินกำหนด' },
         { t: 'เงินคืนรอรับจาก BSL', v: loanMoney(refundPending),
@@ -250,8 +248,15 @@ function renderLoanKpis() {
         { t: 'รายการรอข้อมูล', v: `${noData} รายการ`, amber: noData > 0,
           n: noData ? 'ต้องกรอกยอดตามใบแจ้งหนี้หรือวันคาดรับ' : 'ข้อมูลครบ' }
     ];
+    // ภาระเช็คคงเหลือ แสดงในกล่องข้างปุ่มพิมพ์รายงาน
+    const debtAmt = document.getElementById('loan-debt-amount');
+    const debtNote = document.getElementById('loan-debt-note');
+    if (debtAmt) debtAmt.textContent = loanMoney(futureSum);
+    if (debtNote) debtNote.textContent = future.length
+        ? `${future.length} ฉบับ ถึง ${loanFmtDate(future[future.length - 1].date)}` : 'ไม่มีเช็คค้างจ่าย';
+
     const kpiBox = document.getElementById('loan-kpis');
-    kpiBox.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4';
+    kpiBox.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4';
     kpiBox.innerHTML = cards.map(c => `
         <div class="loan-kpi">
             <div class="loan-kpi-title">${c.t}</div>
@@ -471,10 +476,13 @@ function loanShowPage(id) {
 function loanGeneratePDF() {
     if (!LOAN) { alert('ข้อมูลยังโหลดไม่เสร็จ กรุณารอสักครู่'); return; }
     const t = LOAN.today;
-    const kpiHtml = document.getElementById('loan-kpis').innerText ? Array.from(document.querySelectorAll('#loan-kpis .loan-kpi')).map(k =>
+    const debtTd = `<td><div class="k-t">ภาระเช็ค BSL คงเหลือ</div>
+             <div class="k-v">${loanEsc(document.getElementById('loan-debt-amount')?.textContent || '-')}</div>
+             <div class="k-n">${loanEsc(document.getElementById('loan-debt-note')?.textContent || '')}</div></td>`;
+    const kpiHtml = debtTd + (document.getElementById('loan-kpis').innerText ? Array.from(document.querySelectorAll('#loan-kpis .loan-kpi')).map(k =>
         `<td><div class="k-t">${loanEsc(k.querySelector('.loan-kpi-title').textContent)}</div>
              <div class="k-v">${loanEsc(k.querySelector('.loan-kpi-value').textContent)}</div>
-             <div class="k-n">${loanEsc(k.querySelector('.loan-kpi-note').textContent)}</div></td>`).join('') : '';
+             <div class="k-n">${loanEsc(k.querySelector('.loan-kpi-note').textContent)}</div></td>`).join('') : '');
     const alerts = loanBuildAlerts();
     let chartImg = '';
     try { if (loanChartCover) chartImg = loanChartCover.toBase64Image('image/png', 1); } catch (e) { /* ข้ามรูปกราฟ */ }
