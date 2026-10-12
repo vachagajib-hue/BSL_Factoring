@@ -223,6 +223,48 @@ function renderLoanHero() {
         </div>`;
 }
 
+// ---------------- ภาระเช็คคงเหลือ + รายละเอียด ----------------
+function loanDebtBreakdown() {
+    const curCycle = LOAN.next ? LOAN.next.cycle : null;
+    const rows = LOAN.upcoming.map(p => {
+        const c = LOAN.cycles.find(x => x.cycle === p.cycle);
+        const isCur = p.cycle === curCycle;
+        const cut = isCur && c ? Math.min(c.received, p.amount) : 0;   // ตัดได้ไม่เกินหน้าเช็ค
+        return { cycle: p.cycle, chq: p.chq, date: p.date, face: p.amount, cut, remain: p.amount - cut, isCur };
+    });
+    const face = rows.reduce((s, r) => s + r.face, 0);
+    const cut = rows.reduce((s, r) => s + r.cut, 0);
+    return { rows, face, cut, remaining: face - cut, curCycle };
+}
+function renderLoanDebtPanel(debt) {
+    const panel = document.getElementById('loan-debt-panel');
+    if (!panel) return;
+    const body = debt.rows.map(r => `<tr class="${r.isCur ? 'is-current' : ''}">
+        <td>${loanEsc(loanCycleLabel(r.cycle))}${r.isCur ? ' <b style="color:#c2410c">(เดือนปัจจุบัน)</b>' : ''}</td>
+        <td>${loanEsc(r.chq || '-')}</td><td>${loanFmtDate(r.date)}</td>
+        <td class="num">${loanMoney(r.face)}</td>
+        <td class="num" style="color:${r.cut > 0 ? '#15803d' : '#94a3b8'}">${r.cut > 0 ? loanMoney(r.cut) : '-'}</td>
+        <td class="num" style="font-weight:700">${loanMoney(r.remain)}</td></tr>`).join('');
+    panel.innerHTML = `
+        <h4>ภาระเช็ค BSL คงเหลือ</h4>
+        <p class="calc">หน้าเช็คที่ยังไม่ถึงกำหนด ${loanMoney(debt.face)} − ยอดลูกหนี้จ่ายตัดแล้ว${debt.curCycle ? ' รอบ ' + loanEsc(loanCycleLabel(debt.curCycle)) : ''} ${loanMoney(debt.cut)} = <b>${loanMoney(debt.remaining)}</b></p>
+        <div style="overflow-x:auto"><table>
+            <thead><tr><th>รอบ</th><th>เลขที่เช็ค</th><th>วันที่เช็ค</th><th>หน้าเช็ค</th><th>ตัดแล้ว</th><th>คงเหลือ</th></tr></thead>
+            <tbody>${body || '<tr><td colspan="6" style="text-align:center;color:#94a3b8">ไม่มีเช็คค้างจ่าย</td></tr>'}</tbody>
+            <tfoot><tr><td colspan="3">รวม ${debt.rows.length} ฉบับ</td><td class="num">${loanMoney(debt.face)}</td>
+                <td class="num">${loanMoney(debt.cut)}</td><td class="num">${loanMoney(debt.remaining)}</td></tr></tfoot>
+        </table></div>
+        <p class="calc" style="margin:10px 0 0">ยอดตัดแล้ว = ยอดเงินเข้าจริงจากลูกหนี้ในรอบเดือนปัจจุบัน (คอลัมน์ L ชีต BSL_รายการรับเงิน) ส่วนที่เกินหน้าเช็คถือเป็นเงินคืน</p>`;
+}
+function loanToggleDebtPanel(open) {
+    const panel = document.getElementById('loan-debt-panel');
+    const btn = document.getElementById('loan-debt-toggle');
+    if (!panel || !btn) return;
+    const show = open === undefined ? panel.classList.contains('hidden') : open;
+    panel.classList.toggle('hidden', !show);
+    btn.setAttribute('aria-expanded', show ? 'true' : 'false');
+}
+
 // ---------------- KPI ----------------
 function renderLoanKpis() {
     const future = LOAN.upcoming;
@@ -248,12 +290,16 @@ function renderLoanKpis() {
         { t: 'รายการรอข้อมูล', v: `${noData} รายการ`, amber: noData > 0,
           n: noData ? 'ต้องกรอกยอดตามใบแจ้งหนี้หรือวันคาดรับ' : 'ข้อมูลครบ' }
     ];
-    // ภาระเช็คคงเหลือ แสดงในกล่องข้างปุ่มพิมพ์รายงาน
+    // ภาระเช็คคงเหลือ = หน้าเช็คที่ยังไม่ถึงกำหนด − ยอดที่ลูกหนี้จ่ายตัดแล้วในเดือนปัจจุบัน (ไม่เกินหน้าเช็คเดือนนั้น)
+    const debt = loanDebtBreakdown();
     const debtAmt = document.getElementById('loan-debt-amount');
     const debtNote = document.getElementById('loan-debt-note');
-    if (debtAmt) debtAmt.textContent = loanMoney(futureSum);
+    if (debtAmt) debtAmt.textContent = loanMoney(debt.remaining);
     if (debtNote) debtNote.textContent = future.length
-        ? `${future.length} ฉบับ ถึง ${loanFmtDate(future[future.length - 1].date)}` : 'ไม่มีเช็คค้างจ่าย';
+        ? `${future.length} ฉบับ ถึง ${loanFmtDate(future[future.length - 1].date)}`
+          + (debt.cut > 0 ? ` หักตัดแล้ว ${loanMoney(debt.cut)}` : '')
+        : 'ไม่มีเช็คค้างจ่าย';
+    renderLoanDebtPanel(debt);
 
     const kpiBox = document.getElementById('loan-kpis');
     kpiBox.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4';
@@ -571,6 +617,15 @@ document.addEventListener('DOMContentLoaded', () => {
             initLoanPage(null, 'Google Sheets ไม่ตอบกลับภายใน 60 วินาที — กด F5 เพื่อลองใหม่');
         }
     }, 1000);
+    const debtBtn = document.getElementById('loan-debt-toggle');
+    if (debtBtn) debtBtn.addEventListener('click', e => { e.stopPropagation(); loanToggleDebtPanel(); });
+    document.addEventListener('click', e => {
+        const wrap = document.getElementById('loan-debt-wrap');
+        if (wrap && !wrap.contains(e.target)) loanToggleDebtPanel(false);
+    });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { loanToggleDebtPanel(false); }
+    });
     const btn = document.getElementById('btnLoanPDF');
     if (btn) btn.addEventListener('click', loanGeneratePDF);
     // หน้าเริ่มต้น = หน้า 2 (รายงานข้อมูล Factoring (Loan)); เปิดหน้า 1 ตรงได้ด้วย #overview
