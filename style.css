@@ -311,3 +311,24 @@ body {
 .loan-debt-label { font-size: 12px; font-weight: 700; color: #2F5D50; }
 .loan-debt-value { font-size: 22px; font-weight: 800; color: #0f172a; line-height: 1.15; font-variant-numeric: tabular-nums; }
 .loan-debt-note { font-size: 11px; color: #64748b; }
+.loan-debt-btn {
+    display: inline-flex; align-items: center; gap: 4px; margin-left: 6px;
+    font-size: 12px; font-weight: 700; color: #2F5D50; background: #fff;
+    border: 1px solid #c9dcd3; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-family: inherit;
+}
+.loan-debt-btn:hover { background: #e8f1ed; }
+.loan-debt-btn:focus-visible { outline: 2px solid #2F5D50; outline-offset: 2px; }
+.loan-debt-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
+.loan-debt-panel {
+    position: absolute; right: 0; top: calc(100% + 6px); z-index: 60;
+    width: min(680px, 92vw); background: #fff; border: 1px solid #c9dcd3; border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(15,23,42,.18); padding: 16px;
+}
+.loan-debt-panel h4 { font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+.loan-debt-panel .calc { font-size: 12px; color: #475569; margin-bottom: 10px; }
+.loan-debt-panel table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.loan-debt-panel th { background: #2F5D50; color: #fff; padding: 7px 8px; font-weight: 700; white-space: nowrap; }
+.loan-debt-panel td { border-bottom: 1px solid #e2e8f0; padding: 7px 8px; white-space: nowrap; }
+.loan-debt-panel td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.loan-debt-panel tr.is-current td { background: #fff7ed; }
+.loan-debt-panel tfoot td { font-weight: 800; background: #f1f5f9; border-bottom: none; }
