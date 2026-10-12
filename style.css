@@ -342,3 +342,12 @@ body {
 .loan-debt-panel table.refund-sum td { border-bottom: 1px dashed #e2e8f0; padding: 6px 8px; color: #334155; }
 .loan-debt-panel table.refund-sum tr.is-refund td { background: #f0fdf4; color: #15803d; font-weight: 800; border-bottom: none; }
 .loan-debt-panel table.refund-sum tr.is-short td { background: #fef2f2; color: #dc2626; font-weight: 800; border-bottom: none; }
+.loan-debt-panel .loan-debt-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+.loan-debt-panel .loan-debt-head h4 { margin: 0; }
+.loan-debt-pdf-btn {
+    display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+    background: #2F5D50; color: #fff; border: none; border-radius: 8px;
+    padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;
+}
+.loan-debt-pdf-btn:hover { background: #244a40; }
+.loan-debt-pdf-btn:focus-visible { outline: 2px solid #2F5D50; outline-offset: 2px; }
