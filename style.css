@@ -321,14 +321,24 @@ body {
 .loan-debt-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
 .loan-debt-panel {
     position: absolute; right: 0; top: calc(100% + 6px); z-index: 60;
-    width: min(680px, 92vw); background: #fff; border: 1px solid #c9dcd3; border-radius: 12px;
+    width: min(520px, 94vw); background: #fff; border: 1px solid #c9dcd3; border-radius: 12px;
     box-shadow: 0 12px 32px rgba(15,23,42,.18); padding: 16px;
 }
 .loan-debt-panel h4 { font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
 .loan-debt-panel .calc { font-size: 12px; color: #475569; margin-bottom: 10px; }
 .loan-debt-panel table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .loan-debt-panel th { background: #2F5D50; color: #fff; padding: 7px 8px; font-weight: 700; white-space: nowrap; }
-.loan-debt-panel td { border-bottom: 1px solid #e2e8f0; padding: 7px 8px; white-space: nowrap; }
+.loan-debt-panel td { border-bottom: 1px solid #e2e8f0; padding: 7px 8px; }
+.loan-debt-panel td.num { white-space: nowrap; }
 .loan-debt-panel td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .loan-debt-panel tr.is-current td { background: #fff7ed; }
 .loan-debt-panel tfoot td { font-weight: 800; background: #f1f5f9; border-bottom: none; }
+.loan-debt-panel .cur-sum {
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px;
+    margin-top: 10px; padding: 10px 12px; border-radius: 8px;
+    background: #eff6ff; border: 1px solid #bfdbfe; font-size: 13px; color: #334155;
+}
+.loan-debt-panel table.refund-sum { margin-top: 10px; font-size: 13px; }
+.loan-debt-panel table.refund-sum td { border-bottom: 1px dashed #e2e8f0; padding: 6px 8px; color: #334155; }
+.loan-debt-panel table.refund-sum tr.is-refund td { background: #f0fdf4; color: #15803d; font-weight: 800; border-bottom: none; }
+.loan-debt-panel table.refund-sum tr.is-short td { background: #fef2f2; color: #dc2626; font-weight: 800; border-bottom: none; }
