@@ -273,7 +273,16 @@ function renderLoanDebtPanel(debt) {
     }
 
     panel.innerHTML = `
-        <h4>ภาระเช็ค BSL คงเหลือ</h4>
+        <div class="loan-debt-head">
+            <h4>ภาระเช็ค BSL คงเหลือ</h4>
+            <button type="button" id="loan-debt-pdf" class="loan-debt-pdf-btn" data-html2canvas-ignore="true">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                สร้าง PDF
+            </button>
+        </div>
+        <div id="loan-debt-content">
         <p class="calc">หน้าเช็คที่ยังไม่ถึงกำหนด ${loanMoney(debt.face)} − ยอดลูกหนี้จ่ายตัดแล้ว${debt.curCycle ? ' รอบ ' + loanEsc(loanCycleLabel(debt.curCycle)) : ''} ${loanMoney(debt.cut)} = <b>${loanMoney(debt.remaining)}</b></p>
         <div style="overflow-x:auto"><table>
             <thead><tr><th>รอบ</th><th>เลขที่เช็ค</th><th>วันที่เช็ค</th><th>หน้าเช็ค</th><th>ตัดแล้ว</th><th>คาดว่าจะได้รับ</th><th>คงเหลือ</th></tr></thead>
@@ -290,7 +299,60 @@ function renderLoanDebtPanel(debt) {
         </table></div>
         ${refundBox}
 
-        <p class="calc" style="margin:10px 0 0">ยอดตัดแล้ว = ยอดเงินเข้าจริงจากลูกหนี้ในรอบเดือนปัจจุบัน (คอลัมน์ L ชีต BSL_รายการรับเงิน) ส่วนที่เกินหน้าเช็คถือเป็นเงินคืน<br>คาดว่าจะได้รับ = ยอดตามใบแจ้งหนี้ที่ยังไม่มีวันที่เงินเข้า (ไม่นับรายการเลื่อนจ่าย)</p>`;
+        <p class="calc" style="margin:10px 0 0">ยอดตัดแล้ว = ยอดเงินเข้าจริงจากลูกหนี้ในรอบเดือนปัจจุบัน (คอลัมน์ L ชีต BSL_รายการรับเงิน) ส่วนที่เกินหน้าเช็คถือเป็นเงินคืน<br>คาดว่าจะได้รับ = ยอดตามใบแจ้งหนี้ที่ยังไม่มีวันที่เงินเข้า (ไม่นับรายการเลื่อนจ่าย)</p>
+        </div>`;
+    const pdfBtn = document.getElementById('loan-debt-pdf');
+    if (pdfBtn) pdfBtn.addEventListener('click', e => { e.stopPropagation(); loanDebtPDF(); });
+}
+
+// PDF ของหน้าต่างรายละเอียด (A4 แนวตั้ง) — หัวกระดาษ ThaiDrill + วันที่ + ช่องลงนาม
+function loanDebtPDF() {
+    const content = document.getElementById('loan-debt-content');
+    if (!content || !LOAN) return;
+    const w = window.open('', '_blank', 'width=1000,height=900');
+    if (!w) { alert('เบราว์เซอร์บล็อก popup กรุณาอนุญาต popup สำหรับเว็บไซต์นี้'); return; }
+    w.document.open();
+    w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title> </title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4 portrait; margin: 10mm 8mm; }
+  body { font-family: 'Sarabun', sans-serif; color: #1e293b; margin: 0; padding: 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sign { background: linear-gradient(180deg,#ef4444 0%,#e11d2e 55%,#b91c1c 100%); padding: 4px 20px 10px; position: relative; }
+  .sign .corner { text-align: right; font-size: 10px; font-weight: 700; color: #fff; letter-spacing: .18em; }
+  .sign .row { display: flex; align-items: center; gap: 18px; }
+  .sign .line { flex: 1; height: 4px; background: #fff; }
+  .sign .title { font-size: 30px; font-weight: 800; color: #fff; font-style: italic; text-shadow: 0 2px 0 #64748b; }
+  .sign .fin { position: absolute; right: 20px; bottom: 6px; font-size: 11px; font-weight: 700; color: #fff; letter-spacing: .25em; font-style: italic; }
+  .strip1 { height: 8px; background: linear-gradient(180deg,#cbd5e1,#94a3b8); } .strip2 { height: 4px; background: #475569; }
+  h1 { text-align: center; font-size: 18px; margin: 12px 0 2px; } .sub { text-align: center; font-size: 12px; color: #475569; margin-bottom: 14px; }
+  h4 { font-size: 13px; color: #2F5D50; margin: 16px 0 6px; border-left: 4px solid #2F5D50; padding-left: 8px; }
+  .calc { font-size: 11px; color: #475569; margin: 0 0 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+  th { background: #2F5D50; color: #fff; padding: 6px; border: 1px solid #3f7466; }
+  td { border: 1px solid #cbd5e1; padding: 5px 7px; } td.num { text-align: right; white-space: nowrap; }
+  tr.is-current td { background: #fff7ed; } tfoot td { background: #f1f5f9; font-weight: 800; }
+  table.refund-sum { width: 60%; margin: 10px 0 0 auto; font-size: 11.5px; }
+  table.refund-sum tr.is-refund td { background: #f0fdf4; color: #15803d; font-weight: 800; }
+  table.refund-sum tr.is-short td { background: #fef2f2; color: #dc2626; font-weight: 800; }
+  tr, .refund-sum { page-break-inside: avoid; }
+  .sigs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-top: 56px; text-align: center; font-size: 10px; color: #64748b; font-weight: 700; page-break-inside: avoid; }
+  .sigs div { border-top: 1px solid #94a3b8; padding-top: 6px; margin: 0 20px; }
+</style></head><body>
+  <div class="sign"><div class="corner">บริษัท รถเจาะไทย จำกัด</div>
+    <div class="row"><div class="line"></div><div class="title">ThaiDrill</div><div class="line"></div></div>
+    <div class="fin">Finance</div></div>
+  <div class="strip1"></div><div class="strip2"></div>
+  <h1>รายละเอียดภาระเช็ค BSL (Loan) คงเหลือ และรายการที่รอรับ</h1>
+  <div class="sub">บริษัท รถเจาะไทย จำกัด ข้อมูล ณ วันที่ ${loanThaiDate(LOAN.today)}</div>
+  ${content.innerHTML.replace('<p class="calc">', '<h4>ภาระเช็ค BSL คงเหลือ</h4><p class="calc">')}
+  <div class="sigs"><div>ผู้จัดทำ</div><div>ผู้ตรวจสอบ</div><div>ผู้อนุมัติ</div></div>
+<script>
+  window.addEventListener('load', function () {
+    var go = function () { setTimeout(function () { window.focus(); window.print(); }, 300); };
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(go); else setTimeout(go, 600);
+  });
+<\/script></body></html>`);
+    w.document.close();
 }
 function loanToggleDebtPanel(open) {
     const panel = document.getElementById('loan-debt-panel');
