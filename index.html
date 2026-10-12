@@ -12,7 +12,7 @@
     <!-- Chart.js Datalabels Plugin -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css?v=4.2">
+    <link rel="stylesheet" href="style.css?v=4.3">
     <!-- html2pdf Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
@@ -887,18 +887,28 @@
                     <p class="text-slate-500 text-sm mt-1" id="loan-asof">กำลังโหลดข้อมูล…</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
-                    <!-- ภาระเช็ค BSL คงเหลือ (ย้ายมาจากแถว KPI) -->
-                    <div id="loan-debt-box" class="loan-debt-box" aria-live="polite">
-                        <div class="loan-debt-icon" aria-hidden="true">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                            </svg>
+                    <!-- ภาระเช็ค BSL คงเหลือ (หักยอดที่ตัดแล้วในเดือนปัจจุบัน) + ปุ่มรายละเอียด -->
+                    <div class="relative" id="loan-debt-wrap">
+                        <div id="loan-debt-box" class="loan-debt-box" aria-live="polite">
+                            <div class="loan-debt-icon" aria-hidden="true">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="loan-debt-label">ภาระเช็ค BSL คงเหลือ</p>
+                                <p class="loan-debt-value" id="loan-debt-amount">-</p>
+                                <p class="loan-debt-note" id="loan-debt-note"></p>
+                            </div>
+                            <button type="button" id="loan-debt-toggle" class="loan-debt-btn"
+                                aria-expanded="false" aria-controls="loan-debt-panel">
+                                รายละเอียด
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
                         </div>
-                        <div>
-                            <p class="loan-debt-label">ภาระเช็ค BSL คงเหลือ</p>
-                            <p class="loan-debt-value" id="loan-debt-amount">-</p>
-                            <p class="loan-debt-note" id="loan-debt-note"></p>
-                        </div>
+                        <div id="loan-debt-panel" class="loan-debt-panel hidden" role="region" aria-label="รายละเอียดภาระเช็ค BSL คงเหลือ"></div>
                     </div>
                     <button type="button" id="btnLoanPDF"
                         class="bg-[#2F5D50] text-white hover:bg-[#244a40] px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm font-bold text-sm">
@@ -998,7 +1008,7 @@
 
     <!-- Custom Script -->
     <script src="script.js?v=4.0"></script>
-    <script src="loan.js?v=1.6"></script>
+    <script src="loan.js?v=1.7"></script>
 </body>
 
 </html>
