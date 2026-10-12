@@ -242,12 +242,24 @@ function loanDebtBreakdown() {
 function renderLoanDebtPanel(debt) {
     const panel = document.getElementById('loan-debt-panel');
     if (!panel) return;
-    // แสดงเฉพาะรายการที่รอรับ (ยังไม่มีวันที่เงินเข้า) ของเดือนปัจจุบัน และยอดเงิน
+
+    // ---- ส่วนที่ 1: ตารางเช็คคงเหลือ (รายละเอียดเดิม) ----
+    const chqBody = debt.rows.map(r => `<tr class="${r.isCur ? 'is-current' : ''}">
+        <td>${loanEsc(loanCycleLabel(r.cycle))}${r.isCur ? ' <b style="color:#c2410c">(เดือนปัจจุบัน)</b>' : ''}</td>
+        <td>${loanEsc(r.chq || '-')}</td><td>${loanFmtDate(r.date)}</td>
+        <td class="num">${loanMoney(r.face)}</td>
+        <td class="num" style="color:${r.cut > 0 ? '#15803d' : '#94a3b8'}">${r.cut > 0 ? loanMoney(r.cut) : '-'}</td>
+        <td class="num" style="color:${r.pending > 0 ? '#1d4ed8' : '#94a3b8'}">${r.pending > 0 ? loanMoney(r.pending) : '-'}</td>
+        <td class="num" style="font-weight:700">${loanMoney(r.remain)}</td></tr>`).join('');
+
+    // ---- ส่วนที่ 2: รายการที่รอรับของเดือนปัจจุบัน + เงินที่ BSL ต้องคืน ----
     const items = LOAN.rows
         .filter(r => r.cycle === debt.curCycle && !r.postpone && !r.recvDate && r.expect > 0)
         .sort((a, b) => (a.due ? a.due.getTime() : 9e15) - (b.due ? b.due.getTime() : 9e15));
     const total = items.reduce((s, r) => s + r.expect, 0);
-    // เงินส่วนที่เหลือที่ BSL ต้องคืน = ยอดรอรับ − หน้าเช็คคงเหลือของเดือนปัจจุบัน
+    const itemBody = items.map(r => `<tr>
+        <td><b>${loanEsc(r.debtor)}</b><br><span style="color:#64748b">${loanEsc(r.desc)}</span></td>
+        <td class="num">${loanMoney(r.expect)}</td></tr>`).join('');
     let refundBox = '';
     if (debt.cur) {
         const left = total - debt.cur.remain;
@@ -259,17 +271,26 @@ function renderLoanDebtPanel(debt) {
                 <td class="num">${loanMoney(Math.abs(left))}</td></tr>
         </table>`;
     }
-    const body = items.map(r => `<tr>
-        <td><b>${loanEsc(r.debtor)}</b><br><span style="color:#64748b">${loanEsc(r.desc)}</span></td>
-        <td class="num">${loanMoney(r.expect)}</td></tr>`).join('');
+
     panel.innerHTML = `
-        <h4>รายการที่รอรับ${debt.curCycle ? ' รอบ ' + loanEsc(loanCycleLabel(debt.curCycle)) : ''}</h4>
+        <h4>ภาระเช็ค BSL คงเหลือ</h4>
+        <p class="calc">หน้าเช็คที่ยังไม่ถึงกำหนด ${loanMoney(debt.face)} − ยอดลูกหนี้จ่ายตัดแล้ว${debt.curCycle ? ' รอบ ' + loanEsc(loanCycleLabel(debt.curCycle)) : ''} ${loanMoney(debt.cut)} = <b>${loanMoney(debt.remaining)}</b></p>
         <div style="overflow-x:auto"><table>
-            <thead><tr><th style="text-align:left">รายการ</th><th>ยอดเงิน</th></tr></thead>
-            <tbody>${body || '<tr><td colspan="2" style="text-align:center;color:#94a3b8">ไม่มีรายการรอรับ</td></tr>'}</tbody>
+            <thead><tr><th>รอบ</th><th>เลขที่เช็ค</th><th>วันที่เช็ค</th><th>หน้าเช็ค</th><th>ตัดแล้ว</th><th>คาดว่าจะได้รับ</th><th>คงเหลือ</th></tr></thead>
+            <tbody>${chqBody || '<tr><td colspan="7" style="text-align:center;color:#94a3b8">ไม่มีเช็คค้างจ่าย</td></tr>'}</tbody>
+            <tfoot><tr><td colspan="3">รวม ${debt.rows.length} ฉบับ</td><td class="num">${loanMoney(debt.face)}</td>
+                <td class="num">${loanMoney(debt.cut)}</td><td class="num">${loanMoney(debt.pending)}</td><td class="num">${loanMoney(debt.remaining)}</td></tr></tfoot>
+        </table></div>
+
+        <h4 style="margin-top:16px">รายการที่รอรับ${debt.curCycle ? ' รอบ ' + loanEsc(loanCycleLabel(debt.curCycle)) : ''}</h4>
+        <div style="overflow-x:auto"><table>
+            <thead><tr><th style="text-align:left">รายการ</th><th style="width:160px">ยอดเงิน</th></tr></thead>
+            <tbody>${itemBody || '<tr><td colspan="2" style="text-align:center;color:#94a3b8">ไม่มีรายการรอรับ</td></tr>'}</tbody>
             <tfoot><tr><td>รวม ${items.length} รายการ</td><td class="num">${loanMoney(total)}</td></tr></tfoot>
         </table></div>
-        ${refundBox}`;
+        ${refundBox}
+
+        <p class="calc" style="margin:10px 0 0">ยอดตัดแล้ว = ยอดเงินเข้าจริงจากลูกหนี้ในรอบเดือนปัจจุบัน (คอลัมน์ L ชีต BSL_รายการรับเงิน) ส่วนที่เกินหน้าเช็คถือเป็นเงินคืน<br>คาดว่าจะได้รับ = ยอดตามใบแจ้งหนี้ที่ยังไม่มีวันที่เงินเข้า (ไม่นับรายการเลื่อนจ่าย)</p>`;
 }
 function loanToggleDebtPanel(open) {
     const panel = document.getElementById('loan-debt-panel');
