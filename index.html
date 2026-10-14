@@ -12,7 +12,7 @@
     <!-- Chart.js Datalabels Plugin -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css?v=4.7">
+    <link rel="stylesheet" href="style.css?v=4.9">
     <!-- html2pdf Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
@@ -966,6 +966,18 @@
                             <label class="text-xs font-bold text-slate-600 flex items-center gap-2">สถานะ
                                 <select id="loan-f-status" class="loan-select"></select>
                             </label>
+                            <button type="button" id="loan-tx-excel" class="loan-export-btn is-excel" data-html2canvas-ignore="true">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M10 3v18M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                </svg>
+                                Export Excel
+                            </button>
+                            <button type="button" id="loan-tx-pdf" class="loan-export-btn is-pdf" data-html2canvas-ignore="true">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                บันทึกเป็น PDF
+                            </button>
                         </div>
                     </div>
                     <div class="overflow-x-auto">
@@ -1008,7 +1020,7 @@
 
     <!-- Custom Script -->
     <script src="script.js?v=4.0"></script>
-    <script src="loan.js?v=2.1"></script>
+    <script src="loan.js?v=2.4"></script>
 </body>
 
 </html>
