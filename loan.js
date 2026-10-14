@@ -563,12 +563,20 @@ function setupLoanFilters() {
         fc._bound = true;
     }
 }
-function renderLoanTxTable() {
+// รายการตามตัวกรองปัจจุบัน (ใช้ร่วมกันระหว่างตาราง / Excel / PDF)
+function loanFilteredTx() {
     const cyc = document.getElementById('loan-f-cycle').value;
     const st = document.getElementById('loan-f-status').value;
     const list = LOAN.rows
         .filter(r => r.debtor && (!cyc || r.cycle === cyc) && (!st || r.status === st))
         .sort((a, b) => a.cycle.localeCompare(b.cycle) || ((a.due ? a.due.getTime() : 9e15) - (b.due ? b.due.getTime() : 9e15)));
+    return { list, cyc, st,
+             cycLabel: cyc ? loanCycleLabel(cyc) : 'ทุกรอบ', stLabel: st || 'ทุกสถานะ',
+             sumInv: list.reduce((s, r) => s + r.expect, 0),
+             sumRecv: list.reduce((s, r) => s + (r.recvAmt || 0), 0) };
+}
+function renderLoanTxTable() {
+    const { list } = loanFilteredTx();
     const body = list.map(r => `<tr>
         <td class="ctr">${loanEsc(loanCycleLabel(r.cycle))}</td>
         <td class="font-bold text-slate-800">${loanEsc(r.debtor)}</td>
@@ -589,6 +597,121 @@ function renderLoanTxTable() {
         <tbody>${body || '<tr><td colspan="10" class="ctr text-slate-400 p-6">ไม่มีรายการตามตัวกรองที่เลือก</td></tr>'}</tbody>
         <tfoot><tr><td colspan="4">รวม ${list.length} รายการ (ไม่นับยอดที่เลื่อนจ่าย)</td>
             <td class="num">${loanMoney(sumExp)}</td><td></td><td class="num">${loanMoney(sumRecv)}</td><td colspan="3"></td></tr></tfoot>`;
+}
+
+// ---------------- Export ตารางรายการรับเงิน ----------------
+function loanLoadScript(src) {
+    return new Promise((resolve, reject) => {
+        const el = document.createElement('script');
+        el.src = src; el.onload = resolve; el.onerror = () => reject(new Error('โหลดไลบรารีไม่สำเร็จ'));
+        document.head.appendChild(el);
+    });
+}
+async function loanTxExcel() {
+    if (!LOAN) return;
+    const btn = document.getElementById('loan-tx-excel');
+    try {
+        if (btn) btn.disabled = true;
+        if (typeof XLSX === 'undefined') await loanLoadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+        const f = loanFilteredTx();
+        const head = ['รอบ BSL', 'ลูกหนี้', 'รายละเอียด', 'วันคาดรับ', 'ยอดตามใบแจ้งหนี้', 'วันเงินเข้า', 'ยอดเงินเข้า', 'ผลต่าง', 'วันล่าช้า', 'สถานะ', 'หมายเหตุ'];
+        const aoa = [
+            ['บริษัท รถเจาะไทย จำกัด'],
+            ['รายการรับเงินจากลูกหนี้ BSL (Loan)'],
+            [`รอบ: ${f.cycLabel}   สถานะ: ${f.stLabel}   ข้อมูล ณ วันที่ ${loanThaiDate(LOAN.today)}`],
+            [],
+            head
+        ];
+        f.list.forEach(r => aoa.push([
+            loanCycleLabel(r.cycle), r.debtor, String(r.desc || ''),
+            r.due ? loanFmtDate(r.due) : '', r.invoice === null ? '' : r.invoice,
+            r.recvDate ? loanFmtDate(r.recvDate) : '', r.recvAmt === null ? '' : r.recvAmt,
+            (r.recvAmt !== null && r.invoice !== null) ? +(r.recvAmt - r.invoice).toFixed(2) : '',
+            r.late === null ? '' : r.late, r.status, String(r.note || '')
+        ]));
+        const firstData = 6, lastData = 5 + f.list.length;           // แถว Excel (เริ่มนับ 1)
+        aoa.push(['รวม ' + f.list.length + ' รายการ (ไม่นับยอดที่เลื่อนจ่าย)', '', '', '', f.sumInv, '', f.sumRecv]);
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        // ใช้สูตรรวมในแถวท้าย เพื่อให้ตรวจสอบย้อนกลับได้
+        if (f.list.length) {
+            const totRow = lastData + 1;
+            ws['E' + totRow] = { t: 'n', f: `SUMIFS(E${firstData}:E${lastData},J${firstData}:J${lastData},"<>เลื่อนจ่าย")`, v: f.sumInv };
+            ws['G' + totRow] = { t: 'n', f: `SUM(G${firstData}:G${lastData})`, v: f.sumRecv };
+        }
+        const numFmt = '#,##0.00;[Red]-#,##0.00;"-"';
+        for (let r = firstData; r <= lastData + 1; r++) {
+            ['E', 'G', 'H'].forEach(c => { const cell = ws[c + r]; if (cell && cell.t === 'n') cell.z = numFmt; });
+        }
+        ws['!cols'] = [10, 26, 44, 12, 18, 12, 18, 14, 10, 18, 30].map(w => ({ wch: w }));
+        ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 10 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 10 } }, { s: { r: 2, c: 0 }, e: { r: 2, c: 10 } }];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'รายการรับเงิน');
+        const d = LOAN.today;
+        const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+        XLSX.writeFile(wb, `รายการรับเงิน_BSL_${f.cyc || 'ทุกรอบ'}_${stamp}.xlsx`);
+    } catch (e) {
+        alert('Export Excel ไม่สำเร็จ: ' + e.message);
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+function loanTxPDF() {
+    if (!LOAN) return;
+    const f = loanFilteredTx();
+    const rows = f.list.map(r => `<tr>
+        <td class="ctr">${loanEsc(loanCycleLabel(r.cycle))}</td><td><b>${loanEsc(r.debtor)}</b></td><td>${loanEsc(r.desc)}</td>
+        <td class="ctr">${loanFmtDate(r.due)}</td>
+        <td class="num" style="${r.postpone ? 'color:#94a3b8;text-decoration:line-through' : ''}">${r.invoice === null ? '-' : loanMoney(r.invoice)}</td>
+        <td class="ctr">${loanFmtDate(r.recvDate)}</td><td class="num">${r.recvAmt === null ? '-' : loanMoney(r.recvAmt)}</td>
+        <td class="num">${r.late === null ? '-' : r.late}</td><td class="ctr st-${loanEsc(LOAN_STATUS_CLASS[r.status] || '')}">${loanEsc(r.status)}</td>
+        <td>${loanEsc(r.note)}</td></tr>`).join('');
+    const w = window.open('', '_blank', 'width=1200,height=900');
+    if (!w) { alert('เบราว์เซอร์บล็อก popup กรุณาอนุญาต popup สำหรับเว็บไซต์นี้'); return; }
+    w.document.open();
+    w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title> </title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4 landscape; margin: 10mm 8mm; }
+  body { font-family: 'Sarabun', sans-serif; color: #1e293b; margin: 0; padding: 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sign { background: linear-gradient(180deg,#ef4444 0%,#e11d2e 55%,#b91c1c 100%); padding: 4px 20px 10px; position: relative; }
+  .sign .corner { text-align: right; font-size: 10px; font-weight: 700; color: #fff; letter-spacing: .18em; }
+  .sign .row { display: flex; align-items: center; gap: 18px; }
+  .sign .line { flex: 1; height: 4px; background: #fff; }
+  .sign .title { font-size: 30px; font-weight: 800; color: #fff; font-style: italic; text-shadow: 0 2px 0 #64748b; }
+  .sign .fin { position: absolute; right: 20px; bottom: 6px; font-size: 11px; font-weight: 700; color: #fff; letter-spacing: .25em; font-style: italic; }
+  .strip1 { height: 8px; background: linear-gradient(180deg,#cbd5e1,#94a3b8); } .strip2 { height: 4px; background: #475569; }
+  h1 { text-align: center; font-size: 18px; margin: 12px 0 2px; } .sub { text-align: center; font-size: 12px; color: #475569; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+  thead { display: table-header-group; }
+  th { background: #2F5D50; color: #fff; padding: 6px; border: 1px solid #3f7466; white-space: nowrap; }
+  td { border: 1px solid #cbd5e1; padding: 5px 7px; } .num { text-align: right; white-space: nowrap; } .ctr { text-align: center; white-space: nowrap; }
+  tfoot td { background: #f1f5f9; font-weight: 800; } tr { page-break-inside: avoid; }
+  .st-st-paid { color: #166534; font-weight: 700; } .st-st-overdue { color: #b91c1c; font-weight: 700; }
+  .st-st-wait { color: #075985; font-weight: 700; } .st-st-partial { color: #c2410c; font-weight: 700; }
+  .sigs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-top: 48px; text-align: center; font-size: 10px; color: #64748b; font-weight: 700; page-break-inside: avoid; }
+  .sigs div { border-top: 1px solid #94a3b8; padding-top: 6px; margin: 0 24px; }
+</style></head><body>
+  <div class="sign"><div class="corner">บริษัท รถเจาะไทย จำกัด</div>
+    <div class="row"><div class="line"></div><div class="title">ThaiDrill</div><div class="line"></div></div>
+    <div class="fin">Finance</div></div>
+  <div class="strip1"></div><div class="strip2"></div>
+  <h1>รายการรับเงินจากลูกหนี้ BSL (Loan)</h1>
+  <div class="sub">บริษัท รถเจาะไทย จำกัด รอบ ${loanEsc(f.cycLabel)} สถานะ ${loanEsc(f.stLabel)} ข้อมูล ณ วันที่ ${loanThaiDate(LOAN.today)}</div>
+  <table>
+    <thead><tr><th>รอบ BSL</th><th>ลูกหนี้</th><th>รายละเอียด</th><th>วันคาดรับ</th><th>ยอดตามใบแจ้งหนี้</th>
+      <th>วันเงินเข้า</th><th>ยอดเงินเข้า</th><th>วันล่าช้า</th><th>สถานะ</th><th>หมายเหตุ</th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="10" class="ctr">ไม่มีรายการตามตัวกรองที่เลือก</td></tr>'}</tbody>
+    <tfoot><tr><td colspan="4">รวม ${f.list.length} รายการ (ไม่นับยอดที่เลื่อนจ่าย)</td>
+      <td class="num">${loanMoney(f.sumInv)}</td><td></td><td class="num">${loanMoney(f.sumRecv)}</td><td colspan="3"></td></tr></tfoot>
+  </table>
+  <div class="sigs"><div>ผู้จัดทำ</div><div>ผู้ตรวจสอบ</div><div>ผู้อนุมัติ</div></div>
+<script>
+  window.addEventListener('load', function () {
+    var go = function () { setTimeout(function () { window.focus(); window.print(); }, 300); };
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(go); else setTimeout(go, 600);
+  });
+<\/script></body></html>`);
+    w.document.close();
 }
 
 // ---------------- Tabs ----------------
@@ -724,6 +847,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') { loanToggleDebtPanel(false); }
     });
+    const txXls = document.getElementById('loan-tx-excel');
+    if (txXls) txXls.addEventListener('click', loanTxExcel);
+    const txPdf = document.getElementById('loan-tx-pdf');
+    if (txPdf) txPdf.addEventListener('click', loanTxPDF);
     const btn = document.getElementById('btnLoanPDF');
     if (btn) btn.addEventListener('click', loanGeneratePDF);
     // หน้าเริ่มต้น = หน้า 2 (รายงานข้อมูล Factoring (Loan)); เปิดหน้า 1 ตรงได้ด้วย #overview
