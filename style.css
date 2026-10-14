@@ -351,3 +351,15 @@ body {
 }
 .loan-debt-pdf-btn:hover { background: #244a40; }
 .loan-debt-pdf-btn:focus-visible { outline: 2px solid #2F5D50; outline-offset: 2px; }
+
+/* ====== หน้า 2: ปุ่ม Export ตารางรายการรับเงิน ====== */
+.loan-export-btn {
+    display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; padding: 6px 12px;
+    font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; border: 1px solid;
+}
+.loan-export-btn.is-excel { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+.loan-export-btn.is-excel:hover { background: #d1fae5; }
+.loan-export-btn.is-pdf { background: #fff1f2; color: #be123c; border-color: #fecdd3; }
+.loan-export-btn.is-pdf:hover { background: #ffe4e6; }
+.loan-export-btn:focus-visible { outline: 2px solid #2F5D50; outline-offset: 2px; }
+.loan-export-btn[disabled] { opacity: .6; cursor: wait; }
