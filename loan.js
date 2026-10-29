@@ -134,11 +134,13 @@ function loanCompute(bsl) {
         const expected = rs.reduce((s, r) => s + r.expect, 0);
         const received = rs.reduce((s, r) => s + (r.recvAmt || 0), 0);
         const outstanding = rs.filter(r => !r.postpone && !r.recvDate).reduce((s, r) => s + r.expect, 0);
-        const refundExpected = Math.max(0, expected - p.amount);
+        // ยอดที่จะตัดหน้าเช็คได้จริง = ยอดเงินเข้าจริง + ยอดที่ยังรอรับ (ส่วนที่รับบางส่วนแล้วเลื่อนไป ไม่นับในรอบนี้)
+        const projected = received + outstanding;
+        const refundExpected = Math.max(0, projected - p.amount);
         return {
             cycle: c, chq: p.chq, chqDate: p.date, cheque: p.amount, refundReceived: p.refundAmt,
-            expected, received, outstanding, refundExpected,
-            coverage: p.amount > 0 ? expected / p.amount : null,
+            expected, received, outstanding, projected, refundExpected,
+            coverage: p.amount > 0 ? projected / p.amount : null,
             overdue: rs.filter(r => r.status === 'เกินกำหนด').length,
             noData: rs.filter(r => r.status === 'รอข้อมูล').length
         };
@@ -194,7 +196,7 @@ function renderLoanHero() {
     const c = LOAN.cycles.find(x => x.cycle === n.cycle);
     const days = loanDays(n.date, LOAN.today);
     const pct = c && c.coverage !== null ? c.coverage * 100 : 0;
-    const gap = c ? c.expected - n.amount : -n.amount;
+    const gap = c ? c.projected - n.amount : -n.amount;
     const color = pct >= 100 ? '#15803d' : pct >= 70 ? '#d97706' : '#dc2626';
 
     el.innerHTML = `
@@ -215,8 +217,8 @@ function renderLoanHero() {
             <div class="loan-meter" role="progressbar" aria-valuenow="${Math.round(pct)}" aria-valuemin="0" aria-valuemax="100">
                 <span style="width:${Math.min(pct, 100)}%;background:${color}"></span>
             </div>
-            <div class="loan-cover-row"><span>ยอดคาดรับในรอบ</span><b>${loanMoney(c ? c.expected : 0)}</b></div>
             <div class="loan-cover-row"><span>รับเงินแล้ว</span><b>${loanMoney(c ? c.received : 0)}</b></div>
+            <div class="loan-cover-row"><span>รอรับ</span><b>${loanMoney(c ? c.outstanding : 0)}</b></div>
             <div class="loan-cover-row"><span>${gap >= 0 ? 'เกินหน้าเช็ค (เงินคืน)' : 'ยังขาดจากหน้าเช็ค'}</span>
                 <b style="color:${gap >= 0 ? '#15803d' : '#dc2626'}">${loanMoney(Math.abs(gap))}</b></div>
             ${c && c.noData ? `<p class="text-xs text-amber-700 mt-2">มี ${c.noData} รายการในรอบนี้ที่ยังไม่ได้กรอกยอดหรือวันคาดรับ</p>` : ''}
@@ -262,10 +264,14 @@ function renderLoanDebtPanel(debt) {
         <td class="num">${loanMoney(r.expect)}</td></tr>`).join('');
     let refundBox = '';
     if (debt.cur) {
-        const left = total - debt.cur.remain;
+        // เงินคืน = ยอดรับแล้ว (เงินเข้าจริง) + ยอดรอรับ − หน้าเช็คเต็มจำนวน
+        const cyc = LOAN.cycles.find(x => x.cycle === debt.curCycle);
+        const recv = cyc ? cyc.received : 0;
+        const left = recv + total - debt.cur.face;
         refundBox = `<table class="refund-sum">
-            <tr><td>ยอดรอรับ</td><td class="num">${loanMoney(total)}</td></tr>
-            <tr><td>หัก หน้าเช็คคงเหลือ ${loanEsc(debt.cur.chq)}</td><td class="num">(${loanMoney(debt.cur.remain)})</td></tr>
+            <tr><td>ยอดรับแล้ว (เงินเข้าจริง)</td><td class="num">${loanMoney(recv)}</td></tr>
+            <tr><td>บวก ยอดรอรับ</td><td class="num">${loanMoney(total)}</td></tr>
+            <tr><td>หัก หน้าเช็ค ${loanEsc(debt.cur.chq)}</td><td class="num">(${loanMoney(debt.cur.face)})</td></tr>
             <tr class="${left >= 0 ? 'is-refund' : 'is-short'}">
                 <td>${left >= 0 ? 'เงินส่วนที่เหลือที่ BSL ต้องคืน' : 'ยังขาดจากหน้าเช็ค'}</td>
                 <td class="num">${loanMoney(Math.abs(left))}</td></tr>
@@ -415,13 +421,13 @@ function loanBuildAlerts() {
     // 1) เช็คที่ยังไม่ถึงกำหนด แต่ยอดคาดรับไม่พอ (3 ฉบับถัดไป)
     const upcomingCycles = LOAN.upcoming.map(p => LOAN.cycles.find(c => c.cycle === p.cycle)).filter(Boolean);
     upcomingCycles.slice(0, 3).forEach(c => {
-        if (c.expected < c.cheque) {
-            items.push(c.expected === 0
+        if (c.projected < c.cheque) {
+            items.push(c.projected === 0
                 ? `รอบ ${loanCycleLabel(c.cycle)} เช็ค ${c.chq} วันที่ ${loanFmtDate(c.chqDate)} ยอด ${loanMoney(c.cheque)} — ยังไม่มีข้อมูลยอดคาดรับจากลูกหนี้`
-                : `รอบ ${loanCycleLabel(c.cycle)} เช็ค ${c.chq} วันที่ ${loanFmtDate(c.chqDate)} — ยอดคาดรับครอบคลุม ${(c.coverage * 100).toFixed(1)}% ยังขาด ${loanMoney(c.cheque - c.expected)} บาท`);
+                : `รอบ ${loanCycleLabel(c.cycle)} เช็ค ${c.chq} วันที่ ${loanFmtDate(c.chqDate)} — ยอดคาดรับครอบคลุม ${(c.coverage * 100).toFixed(1)}% ยังขาด ${loanMoney(c.cheque - c.projected)} บาท`);
         }
     });
-    const restShort = upcomingCycles.slice(3).filter(c => c.expected < c.cheque).length;
+    const restShort = upcomingCycles.slice(3).filter(c => c.projected < c.cheque).length;
     if (restShort) items.push(`รอบถัดไปอีก ${restShort} รอบ ยอดคาดรับยังต่ำกว่าหน้าเช็ค`);
 
     // 2) เกินกำหนดเกิน 7 วัน
@@ -462,7 +468,7 @@ function renderLoanCharts() {
         labels: cy.map(c => loanCycleLabel(c.cycle)),
         datasets: [
             { type: 'bar', label: 'หน้าเช็ค BSL', data: cy.map(c => c.cheque), backgroundColor: '#94a3b8', yAxisID: 'y', order: 2 },
-            { type: 'bar', label: 'ยอดคาดรับ', data: cy.map(c => c.expected), backgroundColor: '#2F5D50', yAxisID: 'y', order: 2 },
+            { type: 'bar', label: 'รับแล้ว + รอรับ', data: cy.map(c => c.projected), backgroundColor: '#2F5D50', yAxisID: 'y', order: 2 },
             { type: 'bar', label: 'รับเงินแล้ว', data: cy.map(c => c.received), backgroundColor: '#8fbfae', yAxisID: 'y', order: 2 },
             { type: 'line', label: '% ครอบคลุม', data: cy.map(c => c.coverage === null ? null : +(c.coverage * 100).toFixed(1)),
               borderColor: '#16a34a', backgroundColor: '#16a34a', yAxisID: 'y1', tension: 0.2, pointRadius: 4, order: 1 }
@@ -525,26 +531,26 @@ function renderLoanChequeTable() {
     const nextCycle = LOAN.next ? LOAN.next.cycle : null;
     const tot = k => cy.reduce((s, c) => s + (c[k] || 0), 0);
     const body = cy.map(c => {
-        const diff = c.expected - c.cheque;
+        const diff = c.projected - c.cheque;
         return `<tr class="${c.cycle === nextCycle ? 'is-current' : ''}">
             <td class="ctr font-bold">${loanEsc(loanCycleLabel(c.cycle))}</td>
             <td class="ctr">${loanEsc(c.chq || '-')}</td>
             <td class="ctr">${loanFmtDate(c.chqDate)}</td>
             <td class="num font-bold">${loanMoney(c.cheque)}</td>
-            <td class="num">${loanMoney(c.expected)}</td>
+            <td class="num">${loanMoney(c.projected)}</td>
             <td class="num">${c.coverage === null ? '-' : (c.coverage * 100).toFixed(1) + '%'}</td>
             <td class="num" style="color:${diff >= 0 ? '#15803d' : '#dc2626'}">${loanMoney(diff)}</td>
             <td class="num">${c.refundReceived ? loanMoney(c.refundReceived) : '-'}</td>
             <td class="ctr">${loanChequeStatus(c)}</td>
         </tr>`;
     }).join('');
-    const totDiff = tot('expected') - tot('cheque');
+    const totDiff = tot('projected') - tot('cheque');
     document.getElementById('loan-cheque-table').innerHTML = `
-        <thead><tr><th>รอบ BSL</th><th>เลขที่เช็ค</th><th>วันที่เช็ค</th><th>ยอดจ่าย BSL</th><th>ยอดคาดรับ</th>
+        <thead><tr><th>รอบ BSL</th><th>เลขที่เช็ค</th><th>วันที่เช็ค</th><th>ยอดจ่าย BSL</th><th>รับแล้ว + รอรับ</th>
             <th>% ครอบคลุม</th><th>ส่วนต่าง</th><th>เงินคืนรับจริง</th><th>สถานะเช็ค</th></tr></thead>
         <tbody>${body || '<tr><td colspan="9" class="ctr text-slate-400 p-6">ยังไม่มีข้อมูลเช็คในชีต BSL_จ่ายBSL</td></tr>'}</tbody>
         <tfoot><tr><td class="ctr" colspan="3">รวม ${cy.length} ฉบับ</td>
-            <td class="num">${loanMoney(tot('cheque'))}</td><td class="num">${loanMoney(tot('expected'))}</td><td></td>
+            <td class="num">${loanMoney(tot('cheque'))}</td><td class="num">${loanMoney(tot('projected'))}</td><td></td>
             <td class="num" style="color:${totDiff >= 0 ? '#15803d' : '#dc2626'}">${loanMoney(totDiff)}</td>
             <td class="num">${loanMoney(tot('refundReceived'))}</td><td></td></tr></tfoot>`;
 }
